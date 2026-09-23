@@ -10,9 +10,12 @@
   "repository": "https://github.com/devbaj-stastny-jakub/better-grill",
   "license": "MIT",
   "keywords": [
+    "ai",
+    "browser-ui",
+    "claude",
+    "claude-code-skill",
     "grill",
     "interview",
-    "planning",
-    "browser-ui"
+    "planning"
   ]
 }

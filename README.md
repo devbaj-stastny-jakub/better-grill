@@ -1,12 +1,27 @@
-# better grill
+# better-grill
 
-Run grill sessions in a browser instead of the terminal. Claude posts rounds of questions with options and a recommendation; you lock in each question when ready (pick, type your own answer, or both), or open a discussion thread per question. When everything is locked in, **Send to Claude** sends the round; discussion messages go right away. From a discussion, Claude can resolve, edit, drop or add questions in the UI. Everything runs through your open Claude Code session, so it uses your Claude Code subscription. No API key.
+[![npm](https://img.shields.io/npm/v/better-grill)](https://www.npmjs.com/package/better-grill)
+[![license](https://img.shields.io/npm/l/better-grill)](LICENSE)
+[![node](https://img.shields.io/node/v/better-grill)](https://nodejs.org)
+
+Grill sessions for Claude Code, in your browser instead of the terminal.
+
+![A grill round in better-grill: one question locked in, the next with Claude's recommended option picked](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/round.png)
+
+A grill session is Claude interviewing you about a plan until nothing is left unsaid. It maps the decisions as a tree, asks every question it can answer right now in one round with a recommended answer each, and keeps going until every branch is settled. The method comes from Matt Pocock's [`grilling`](https://github.com/mattpocock/skills) skill; better-grill gives it a proper UI.
+
+Why a browser:
+
+- **Options side by side**, each with a description and Claude's pick marked, instead of a wall of terminal text.
+- **A discussion thread per question.** Push back on one question without derailing the rest; Claude can reword, resolve, drop or add questions from the talk.
+- **Answer at your own pace.** Lock in questions in any order, change your mind, then send the whole round at once.
+- **Runs on your Claude Code session.** Uses your existing subscription. No API key, no hosted service.
 
 ## Requirements
 
 - [Claude Code](https://code.claude.com)
 - [Node.js](https://nodejs.org) 20 or newer on your `PATH`
-- Matt Pocock's `grilling` skill from [mattpocock/skills](https://github.com/mattpocock/skills). better-grill brings the UI; `grilling` brings the method (design tree, frontier, recommended answers).
+- The `grilling` skill from [mattpocock/skills](https://github.com/mattpocock/skills). better-grill brings the UI; `grilling` brings the method.
 
 ## Install
 
@@ -17,125 +32,36 @@ In Claude Code:
 /plugin install better-grill@better-grill
 ```
 
-Then, in any session:
+## Usage
+
+In any Claude Code session:
 
 ```
 /better-grill:better-grill <what you want grilled>
 ```
 
-Your browser opens on the session. Claude keeps the terminal quiet and talks to you in the UI until you confirm the final summary.
+1. Your browser opens on the session. The terminal stays quiet; everything happens in the UI.
+2. Claude posts a round of questions. For each one, pick an option, write your own answer, or both, then **Lock in**.
+3. Not sure about a question? Hit **Discuss** and talk it through. Claude answers in the thread and updates the question when you agree on something.
+4. When every question is locked in, **Send to Claude**. The next round builds on your answers.
+5. When nothing is left open, Claude posts a summary of every decision. Confirm it, or say what's wrong and the grilling continues.
 
-Several Claude sessions can grill at the same time; each gets its own bridge, port and browser tab.
+![A discussion thread next to the question it is about](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/discussion.png)
 
-## How it talks to Claude Code
+Several Claude sessions can grill at the same time; each gets its own browser tab.
 
-Claude Code has no port or socket to call, so the browser cannot reach it. A small local **bridge** sits between them:
+## How it works
 
-```
-Claude Code session                 bridge (node, 127.0.0.1)            browser
-───────────────────                 ────────────────────────            ───────
-grill round  ── POST /api/rounds ─▶ session state ── SSE /api/stream ─▶ UI
-grill wait   ── GET  /api/wait ───▶ (held open)
-                                    ◀── POST answer / chat ──────────── click
-             ◀── events JSON ─────  releases the wait
-grill reply  ── POST /reply ──────▶ ── SSE ────────────────────────────▶ chat thread
-```
+- Claude Code has no port the browser could call, so better-grill starts a small local **bridge** server for each session.
+- Claude talks to the bridge with a CLI from its Bash tool: it posts rounds, then waits in the background until you send a round or write in a discussion.
+- The bridge never calls Claude or any API. It holds the session state and hands your answers back.
+- It listens on `127.0.0.1` only, rejects requests from other websites, and shuts down on its own after 30 idle minutes.
 
-- Claude drives the bridge with the `grill` CLI from its Bash tool.
-- `grill wait` is a long-poll Claude runs in the background. It returns when you press Send or write in a discussion, and Claude Code wakes the session with the events.
-- The bridge never calls Claude. It only holds state and releases waits.
-- A bridge exits on its own after 30 minutes with no wait running, no browser tab open and no requests.
+Details, security model, CLI reference and known limits: [ARCHITECTURE.md](ARCHITECTURE.md).
 
-### Security
+## Contributing
 
-The bridge listens on `127.0.0.1` only and:
-
-- refuses requests whose `Host` isn't localhost (DNS rebinding),
-- refuses requests whose `Origin` isn't the page it serves, and requires JSON bodies, so other websites open in your browser can't post into the session,
-- refuses Claude-side calls without its session id (see below).
-
-## CLI
-
-The plugin runs it as `node <skill dir>/dist/cli.js`; outside Claude Code it is also `npx better-grill`.
-
-```
-grill start [--title T] [--port N] [--no-open]   # prints {"session":"62950-a1b2c3","url","log"}
-grill round   -s SESSION < round.json
-grill add     -s SESSION < questions.json      # into the latest round, while unsent
-grill wait    -s SESSION
-grill reply   -s SESSION Q3 < text.md
-grill resolve -s SESSION Q3 < resolution.json  # {"options":[1],"text":"…"}
-grill edit    -s SESSION Q3 < patch.json
-grill drop    -s SESSION Q3 < reason.txt
-grill summary -s SESSION < summary.md
-grill state   -s SESSION
-grill stop    -s SESSION
-```
-
-Each `grill start` runs its own bridge on a free port. The session handle is `<port>-<id>`: the CLI sends the id in an `x-grill-session` header and the bridge refuses Claude-side calls whose id doesn't match, so a session that mixes up ports gets an error instead of writing into someone else's grill.
-
-Exit codes: 0 ok, 1 bridge rejected the input, 2 usage error or bridge unreachable.
-
-## Development
-
-Needs Node 24 (`.nvmrc`) and pnpm.
-
-```sh
-pnpm install
-pnpm dev          # bridge from TypeScript on :4777 as session 4777-dev (node --watch) + Vite on :5173 proxying /api
-pnpm demo         # fake Claude: posts rounds, echoes chat replies, ends in a summary
-pnpm check-types
-pnpm build        # web UI + bridge bundle into skills/better-grill/dist
-```
-
-Open http://localhost:5173 after `pnpm dev`, then run `pnpm demo` in a second terminal.
-
-To use your checkout from real Claude Code sessions, either load it as a plugin with `claude --plugin-dir .`, or symlink the skill:
-
-```sh
-ln -s "$PWD/skills/better-grill" ~/.claude/skills/better-grill
-```
-
-The skill runs the bundle in `skills/better-grill/dist`, so rebuild after bridge changes (`pnpm --filter @better-grill/bridge build:watch` keeps it fresh).
-
-### Layout
-
-| Path                    | What                                                                          |
-| ----------------------- | ----------------------------------------------------------------------------- |
-| `packages/protocol`     | Zod schemas and types shared by bridge and UI: rounds, answers, events         |
-| `apps/bridge`           | Node server (`server.ts`), session logic, `grill` CLI, demo and build scripts  |
-| `apps/web`              | Vite + React + Tailwind + shadcn/ui (Base UI) UI                               |
-| `skills/better-grill`   | `SKILL.md`, plus the built `dist/` (bridge bundle and web UI) it runs          |
-| `.claude-plugin`        | Plugin manifest and the marketplace that points at the npm package             |
-
-In development the bridge runs TypeScript directly with Node's type stripping. For release, esbuild bundles it into dependency-free JS for Node 20+.
-
-`apps/web/src` follows [bulletproof-react](https://github.com/alan2207/bulletproof-react/blob/master/docs/project-structure.md):
-
-| Path                 | What                                                                                |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `app/`               | Providers and `session-screen.tsx`, which composes the features                      |
-| `features/<name>/`   | `session`, `rounds`, `discussion`, `navigation`, `summary`: each with `api/`, `components/`, `hooks/`, `utils/` as needed |
-| `components/ui/`     | shadcn components (Base UI, `base-nova` style). Add more with `pnpm dlx shadcn@latest add <name>` in `apps/web` |
-| `components/`        | Shared app components: markdown, errors, feedback notes, brand, theme toggle         |
-| `hooks/` `lib/` `utils/` `types/` `config/` | Shared hooks, bridge client + theme + lock, pure helpers, types, constants |
-
-Features never import from each other; only `app/` combines them. Theme tokens (stone + orange accent, light and dark) live in `src/index.css`.
-
-### Releasing
-
-The plugin ships as the `better-grill` npm package; the marketplace in `.claude-plugin/marketplace.json` points at it, so nothing built is committed.
-
-```sh
-npm version patch      # bumps package.json and .claude-plugin/plugin.json together
-npm publish            # prepublishOnly runs check-types and build
-git push --follow-tags
-```
-
-## Known limits
-
-- State lives in bridge memory. Browser refresh is fine; a bridge crash loses the session.
-- One Claude session per bridge. Events queue while Claude is busy and arrive as one batch.
+Issues and pull requests welcome. Dev setup: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

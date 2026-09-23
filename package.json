@@ -1,10 +1,13 @@
 {
   "name": "better-grill",
   "version": "0.1.0",
-  "description": "Run grill sessions in a local browser UI instead of the terminal, driven by your open Claude Code session.",
+  "description": "Grill sessions for Claude Code, in your browser instead of the terminal.",
   "keywords": [
+    "ai",
+    "claude",
     "claude-code",
     "claude-code-plugin",
+    "claude-code-skill",
     "grill",
     "interview",
     "planning"
@@ -33,6 +36,7 @@
   "scripts": {
     "dev": "pnpm --parallel --filter @better-grill/bridge --filter @better-grill/web dev",
     "demo": "pnpm --filter @better-grill/bridge demo",
+    "screenshots": "pnpm build && pnpm --filter @better-grill/bridge screenshots",
     "build": "pnpm --filter @better-grill/web build && pnpm --filter @better-grill/bridge build",
     "check-types": "pnpm -r check-types",
     "prepublishOnly": "pnpm check-types && pnpm build",

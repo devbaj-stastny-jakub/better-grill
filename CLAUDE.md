@@ -1,6 +1,6 @@
 # better grill
 
-Browser UI for grill sessions driven by an open Claude Code session. Overview, architecture and commands: [README.md](README.md). Skill contract Claude follows: [skills/better-grill/SKILL.md](skills/better-grill/SKILL.md).
+Browser UI for grill sessions driven by an open Claude Code session. User-facing overview: [README.md](README.md). Bridge, security and CLI: [ARCHITECTURE.md](ARCHITECTURE.md). Dev setup, layout, screenshots, releasing: [CONTRIBUTING.md](CONTRIBUTING.md). Skill contract Claude follows: [skills/better-grill/SKILL.md](skills/better-grill/SKILL.md).
 
 - pnpm workspace: `packages/protocol` (shared zod schemas), `apps/bridge` (node server + `grill` CLI), `apps/web` (Vite + React 19 + Tailwind 4). Repo root is also the published npm package and Claude Code plugin (`.claude-plugin/`).
 - Bridge is run by Node 24 type stripping in dev: erasable TS only (no enums, no parameter properties), relative imports end in `.ts`. It ships as an esbuild bundle for Node 20+ (`skills/better-grill/dist`), so no Node APIs newer than 20, and find files through `apps/bridge/src/paths.ts`.
