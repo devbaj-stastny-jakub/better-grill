@@ -1,5 +1,5 @@
 import type { SessionState } from "@better-grill/protocol";
-import { PowerIcon } from "lucide-react";
+import { PaintBucketIcon } from "lucide-react";
 import { HotkeyHint } from "@/components/hotkey-hint.tsx";
 import { ThemeToggle } from "@/components/theme-toggle.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -37,7 +37,7 @@ export function SessionHeader({ state, connection, onEnd }: Props) {
       <ThemeToggle />
       {!state.ended && (
         <Button variant="outline" size="sm" onClick={onEnd}>
-          <PowerIcon data-icon="inline-start" />
+          <PaintBucketIcon data-icon="inline-start" />
           <span className="hidden sm:inline">End session</span>
         </Button>
       )}
