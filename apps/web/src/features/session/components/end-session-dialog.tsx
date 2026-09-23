@@ -1,4 +1,4 @@
-import { PaintBucketIcon } from "lucide-react";
+import { FireExtinguisherIcon } from "lucide-react";
 import { ErrorNote } from "@/components/feedback/error-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
 import {
@@ -46,7 +46,7 @@ export function EndSessionDialog({ open, unsent, openCount, onCancel, onEnded }:
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogMedia className="bg-destructive/10 text-destructive">
-            <PaintBucketIcon />
+            <FireExtinguisherIcon />
           </AlertDialogMedia>
           <AlertDialogTitle>Stop the grill here?</AlertDialogTitle>
           <AlertDialogDescription>
