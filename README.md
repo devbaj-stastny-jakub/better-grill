@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/hero.png" alt="better grill: let Claude grill your plan. A browser UI with rounds of questions, Claude's pick on each, and a discussion thread per question.">
+  <img src="https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/hero.png" alt="better grill, the UI for the grilling skill: grilling without the terminal mess. Rounds of questions, Claude's pick on each, a discussion thread per question.">
 </p>
 
 <p align="center">
@@ -8,7 +8,7 @@
   <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/better-grill?color=f97316" alt="node"></a>
 </p>
 
-<p align="center"><b>Claude interviews you about your plan until nothing is left unsaid.<br>You answer in a real UI, not a wall of terminal text.</b></p>
+<p align="center"><b>Matt Pocock's <a href="https://github.com/mattpocock/skills"><code>grilling</code></a> skill, in a real UI.<br>Rounds, discussions, one clean send, and no mess in your terminal.</b></p>
 
 ---
 
@@ -35,7 +35,8 @@ You'll need [Node.js](https://nodejs.org) 20+ and the [`grilling`](https://githu
 
 ![A round in better-grill: a long question with a comparison table, Claude's recommended option picked, and the Lock in bar at the bottom](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/round.png)
 
-- 🔥 **Rounds of sharp questions.** Claude maps your plan as a tree of decisions and asks everything it can answer right now, one question at a time, with context, trade-offs and tables where they help.
+- 🧹 **No mess in the terminal.** The whole grill happens in the browser. Your Claude Code terminal stays quiet while you answer.
+- 🔥 **Rounds of sharp questions.** `grilling` maps your plan as a tree of decisions; better grill shows each round one question at a time, with context, trade-offs and tables where they help.
 - 🎯 **Claude's pick on every question.** Take the recommendation, pick another option, write your own answer, or add a note to your pick.
 - 💬 **Push back without derailing.** Every question has its own discussion thread. Argue it out, and Claude rewords, resolves, drops or adds questions from what you agree on.
 - 🔒 **Lock in, then send.** Answer in any order and change your mind freely. When the round is settled, send it all at once and the next round builds on it.

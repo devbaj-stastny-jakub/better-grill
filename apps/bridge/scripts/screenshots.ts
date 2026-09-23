@@ -1,11 +1,12 @@
 /*
  * README screenshots: starts a bridge from the build in skills/better-grill-base/dist,
  * posts the demo rounds and photographs the UI in dark mode into .github/assets,
- * then frames the discussion shot in the hero (scripts/hero.html).
+ * then frames the discussion shot in the hero (scripts/hero.html). Every image gets
+ * rounded corners on a transparent background, so it sits nicely on any README theme.
  * Run `pnpm screenshots` from the repo root (it builds first).
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium, type Page } from "playwright";
@@ -32,6 +33,21 @@ async function settle(page: Page) {
   await page.waitForTimeout(600);
 }
 
+/** Rounded corners, cut to transparency: re-shoots the PNG as an image with border-radius over nothing. */
+async function roundCorners(file: string, radius: number) {
+  const png = readFileSync(file);
+  // PNG header: width and height are big-endian at bytes 16 and 20. Shots are 2x.
+  const width = png.readUInt32BE(16) / 2;
+  const height = png.readUInt32BE(20) / 2;
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2 });
+  await page.setContent(
+    `<body style="margin:0;background:transparent"><img src="data:image/png;base64,${png.toString("base64")}" style="display:block;width:${width}px;height:${height}px;border-radius:${radius}px"></body>`,
+  );
+  await page.locator("img").evaluate((img: { decode(): Promise<void> }) => img.decode());
+  await page.screenshot({ path: file, omitBackground: true });
+  await page.close();
+}
+
 const browser = await chromium.launch();
 try {
   await call(bridge, "POST", "/api/rounds", rounds[0]);
@@ -49,6 +65,7 @@ try {
   await page.evaluate("window.scrollTo(0, 0)");
   mkdirSync(outDir, { recursive: true });
   await page.screenshot({ path: join(outDir, "round.png") });
+  await roundCorners(join(outDir, "round.png"), 16);
 
   // A discussion thread on the second question.
   await page.getByRole("button", { name: "Discuss" }).first().click();
@@ -81,6 +98,9 @@ try {
   await hero.waitForSelector("body[data-ready]", { state: "attached" });
   await hero.evaluate("document.fonts.ready");
   await hero.screenshot({ path: join(outDir, "hero.png") });
+  // After the hero has used the square discussion shot.
+  await roundCorners(join(outDir, "discussion.png"), 16);
+  await roundCorners(join(outDir, "hero.png"), 24);
 
   console.log(`Saved round.png, discussion.png and hero.png to ${outDir}`);
 } finally {

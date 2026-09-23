@@ -91,6 +91,24 @@
         width: 24px;
         height: 24px;
       }
+      .eyebrow {
+        display: inline-flex;
+        align-self: flex-start;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: -8px;
+        padding: 5px 12px;
+        border: 1px solid oklch(0.69 0.19 45 / 0.35);
+        border-radius: 999px;
+        background: oklch(0.69 0.19 45 / 0.1);
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .eyebrow code {
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 13px;
+      }
       h1 {
         font-size: 54px;
         line-height: 1.02;
@@ -187,10 +205,11 @@
         </span>
         better grill
       </div>
-      <h1>Let Claude <em>grill</em> your plan.</h1>
+      <span class="eyebrow">The UI for the <code>grilling</code> skill</span>
+      <h1>Grilling, without the <em>terminal mess</em>.</h1>
       <p class="lede">
-        Round after round of sharp questions, each with Claude's pick. Answer, push back in a thread, lock in. Right in your browser,
-        on your Claude Code session.
+        One round of questions at a time, Claude's pick on each, a discussion thread per question, one clean send. Your terminal
+        stays quiet.
       </p>
       <div class="install"><span class="prompt">&gt;</span> /plugin install better-grill@better-grill</div>
     </div>
