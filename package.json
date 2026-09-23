@@ -37,6 +37,7 @@
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @better-grill/bridge --filter @better-grill/web dev",
+    "dev:skill": "pnpm --parallel --filter @better-grill/bridge --filter @better-grill/web build:watch",
     "demo": "pnpm --filter @better-grill/bridge demo",
     "screenshots": "pnpm build && pnpm --filter @better-grill/bridge screenshots",
     "build": "pnpm --filter @better-grill/web build && pnpm --filter @better-grill/bridge build",

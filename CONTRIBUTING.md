@@ -24,7 +24,13 @@ To use your checkout from real Claude Code sessions, either load it as a plugin 
 for s in better-grill better-grill-docs better-grill-base; do ln -s "$PWD/skills/$s" ~/.claude/skills/$s; done
 ```
 
-The skill runs the bundle in `skills/better-grill-base/dist`, so rebuild after bridge changes (`pnpm --filter @better-grill/bridge build:watch` keeps it fresh).
+The skill runs the bundle in `skills/better-grill-base/dist`. Keep it fresh with:
+
+```sh
+pnpm dev:skill    # vite build --watch + bridge build:watch; dist/web links to apps/web/dist
+```
+
+UI changes then show up on a page refresh in a live session. Bridge changes land in the next session: the running bridge keeps its old code. `SKILL.md` edits apply the next time Claude loads the skill. `pnpm build` (also run by `npm publish`) swaps the symlink back for a copy.
 
 Before opening a pull request: `pnpm check-types && pnpm build`.
 
