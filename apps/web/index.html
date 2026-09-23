@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23d9683a'/%3E%3Cg transform='translate(4 4)' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11h18M4 11a8 6 0 0 0 16 0M8 16.2 6.5 21M16 16.2 17.5 21M9 8c-1-1.5 1-2.5 0-4.5M15 8c-1-1.5 1-2.5 0-4.5'/%3E%3C/g%3E%3C/svg%3E" />
+    <title>better grill</title>
+    <script>
+      // Apply the stored theme before first paint. Same key as STORAGE_KEYS.theme.
+      try {
+        const theme = JSON.parse(localStorage.getItem("better-grill:theme") ?? '"system"');
+        const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

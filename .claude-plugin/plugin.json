@@ -1,0 +1,18 @@
+{
+  "name": "better-grill",
+  "version": "0.1.0",
+  "description": "Run grill sessions in a local browser UI instead of the terminal: rounds of questions with options and a recommendation, a discussion thread per question, driven by your open Claude Code session.",
+  "author": {
+    "name": "Jakub Stastny",
+    "url": "https://github.com/devbaj-stastny-jakub"
+  },
+  "homepage": "https://github.com/devbaj-stastny-jakub/better-grill",
+  "repository": "https://github.com/devbaj-stastny-jakub/better-grill",
+  "license": "MIT",
+  "keywords": [
+    "grill",
+    "interview",
+    "planning",
+    "browser-ui"
+  ]
+}

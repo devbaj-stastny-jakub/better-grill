@@ -1,0 +1,18 @@
+{
+  "name": "better-grill",
+  "description": "better-grill: grill sessions in a local browser UI for Claude Code.",
+  "owner": {
+    "name": "Jakub Stastny",
+    "url": "https://github.com/devbaj-stastny-jakub"
+  },
+  "plugins": [
+    {
+      "name": "better-grill",
+      "description": "Run grill sessions in a local browser UI instead of the terminal.",
+      "source": {
+        "source": "npm",
+        "package": "better-grill"
+      }
+    }
+  ]
+}

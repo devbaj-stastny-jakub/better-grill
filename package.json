@@ -1,0 +1,41 @@
+{
+  "name": "better-grill",
+  "version": "0.1.0",
+  "description": "Run grill sessions in a local browser UI instead of the terminal, driven by your open Claude Code session.",
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "grill",
+    "interview",
+    "planning"
+  ],
+  "license": "MIT",
+  "author": "Jakub Stastny (https://github.com/devbaj-stastny-jakub)",
+  "homepage": "https://github.com/devbaj-stastny-jakub/better-grill",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devbaj-stastny-jakub/better-grill.git"
+  },
+  "bugs": "https://github.com/devbaj-stastny-jakub/better-grill/issues",
+  "type": "module",
+  "packageManager": "pnpm@10.11.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "better-grill": "skills/better-grill/dist/cli.js"
+  },
+  "files": [
+    ".claude-plugin/plugin.json",
+    "skills/better-grill/SKILL.md",
+    "skills/better-grill/dist"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter @better-grill/bridge --filter @better-grill/web dev",
+    "demo": "pnpm --filter @better-grill/bridge demo",
+    "build": "pnpm --filter @better-grill/web build && pnpm --filter @better-grill/bridge build",
+    "check-types": "pnpm -r check-types",
+    "prepublishOnly": "pnpm check-types && pnpm build",
+    "version": "node -e \"const f='.claude-plugin/plugin.json',fs=require('fs'),p=JSON.parse(fs.readFileSync(f));p.version=process.env.npm_package_version;fs.writeFileSync(f,JSON.stringify(p,null,2)+'\\n')\" && git add .claude-plugin/plugin.json"
+  }
+}

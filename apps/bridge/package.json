@@ -1,0 +1,21 @@
+{
+  "name": "@better-grill/bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.ts --port 4777 --session dev --title \"Dev session\"",
+    "build": "node scripts/build.ts",
+    "build:watch": "node scripts/build.ts --watch",
+    "demo": "node scripts/demo.ts",
+    "check-types": "tsc -p ."
+  },
+  "dependencies": {
+    "@better-grill/protocol": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^6.0.0"
+  }
+}
