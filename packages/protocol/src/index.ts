@@ -141,11 +141,18 @@ export type Summary = {
   feedback?: string;
 };
 
+/**
+ * "plain": grill only (grill-me). "docs": Claude also records the glossary (CONTEXT.md)
+ * and ADRs as decisions settle (grill-with-docs). Set by `grill start --docs`.
+ */
+export type SessionMode = "plain" | "docs";
+
 /** "listening": Claude has a wait open. "working": Claude is busy with the last events. */
 export type ClaudeStatus = "listening" | "working";
 
 export type SessionState = {
   title: string;
+  mode: SessionMode;
   startedAt: number;
   rounds: Round[];
   questions: Record<string, Question>;

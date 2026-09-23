@@ -34,7 +34,7 @@ The bridge listens on `127.0.0.1` only and:
 The plugin runs it as `node <skill dir>/dist/cli.js`; outside Claude Code it is also `npx better-grill`.
 
 ```
-grill start [--title T] [--port N] [--no-open]   # prints {"session":"62950-a1b2c3","url","log"}
+grill start [--title T] [--docs] [--port N] [--no-open]   # prints {"session":"62950-a1b2c3","url","log"}
 grill round   -s SESSION < round.json
 grill add     -s SESSION < questions.json      # into the latest round, while unsent
 grill wait    -s SESSION
@@ -51,7 +51,7 @@ Each `grill start` runs its own bridge on a free port. The session handle is `<p
 
 Exit codes: 0 ok, 1 bridge rejected the input, 2 usage error or bridge unreachable.
 
-The full contract Claude follows (round JSON, events, when to resolve or edit) is in [skills/better-grill/SKILL.md](skills/better-grill/SKILL.md).
+The full contract Claude follows (round JSON, events, when to resolve or edit) is in [skills/better-grill-base/SKILL.md](skills/better-grill-base/SKILL.md).
 
 ## Known limits
 

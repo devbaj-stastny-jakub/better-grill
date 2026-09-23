@@ -11,18 +11,20 @@ pnpm install
 pnpm dev          # bridge from TypeScript on :4777 as session 4777-dev (node --watch) + Vite on :5173 proxying /api
 pnpm demo         # fake Claude: posts rounds, echoes chat replies, ends in a summary
 pnpm check-types
-pnpm build        # web UI + bridge bundle into skills/better-grill/dist
+pnpm build        # web UI + bridge bundle into skills/better-grill-base/dist
 ```
 
 Open http://localhost:5173 after `pnpm dev`, then run `pnpm demo` in a second terminal.
 
+The dev bridge runs in plain mode. For the docs-mode UI, run it with `pnpm --filter @better-grill/bridge dev --mode docs` (and Vite with `pnpm --filter @better-grill/web dev`).
+
 To use your checkout from real Claude Code sessions, either load it as a plugin with `claude --plugin-dir .`, or symlink the skill:
 
 ```sh
-ln -s "$PWD/skills/better-grill" ~/.claude/skills/better-grill
+for s in better-grill better-grill-docs better-grill-base; do ln -s "$PWD/skills/$s" ~/.claude/skills/$s; done
 ```
 
-The skill runs the bundle in `skills/better-grill/dist`, so rebuild after bridge changes (`pnpm --filter @better-grill/bridge build:watch` keeps it fresh).
+The skill runs the bundle in `skills/better-grill-base/dist`, so rebuild after bridge changes (`pnpm --filter @better-grill/bridge build:watch` keeps it fresh).
 
 Before opening a pull request: `pnpm check-types && pnpm build`.
 
@@ -33,7 +35,8 @@ Before opening a pull request: `pnpm check-types && pnpm build`.
 | `packages/protocol`   | Zod schemas and types shared by bridge and UI: rounds, answers, events         |
 | `apps/bridge`         | Node server (`server.ts`), session logic, `grill` CLI, demo, screenshot and build scripts |
 | `apps/web`            | Vite + React + Tailwind + shadcn/ui (Base UI) UI                               |
-| `skills/better-grill` | `SKILL.md`, plus the built `dist/` (bridge bundle and web UI) it runs          |
+| `skills/better-grill-base` | Shared `SKILL.md` Claude follows, plus the built `dist/` (bridge bundle and web UI) it runs |
+| `skills/better-grill`, `skills/better-grill-docs` | Entry skills: load the base in `plain` or `docs` mode         |
 | `.claude-plugin`      | Plugin manifest and the marketplace that points at the npm package             |
 
 In development the bridge runs TypeScript directly with Node's type stripping. For release, esbuild bundles it into dependency-free JS for Node 20+.

@@ -26,12 +26,14 @@
     "node": ">=20"
   },
   "bin": {
-    "better-grill": "skills/better-grill/dist/cli.js"
+    "better-grill": "skills/better-grill-base/dist/cli.js"
   },
   "files": [
     ".claude-plugin/plugin.json",
     "skills/better-grill/SKILL.md",
-    "skills/better-grill/dist"
+    "skills/better-grill-docs/SKILL.md",
+    "skills/better-grill-base/SKILL.md",
+    "skills/better-grill-base/dist"
   ],
   "scripts": {
     "dev": "pnpm --parallel --filter @better-grill/bridge --filter @better-grill/web dev",

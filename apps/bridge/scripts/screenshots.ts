@@ -1,5 +1,5 @@
 /*
- * README screenshots: starts a bridge from the build in skills/better-grill/dist,
+ * README screenshots: starts a bridge from the build in skills/better-grill-base/dist,
  * posts the demo rounds and photographs the UI in dark mode into .github/assets.
  * Run `pnpm screenshots` from the repo root (it builds first).
  */
@@ -13,7 +13,7 @@ import { call, parseHandle } from "../src/client.ts";
 import { rounds } from "./demo-rounds.ts";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const cli = join(root, "skills/better-grill/dist/cli.js");
+const cli = join(root, "skills/better-grill-base/dist/cli.js");
 const outDir = join(root, ".github/assets");
 
 const grill = (...args: string[]) => execFileSync(process.execPath, [cli, ...args], { encoding: "utf8" });

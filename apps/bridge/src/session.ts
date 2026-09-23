@@ -9,6 +9,7 @@ import type {
   ResolveInput,
   RoundInput,
   RoundPosted,
+  SessionMode,
   SessionState,
 } from "@better-grill/protocol";
 
@@ -28,9 +29,10 @@ type QuestionInput = RoundInput["questions"][number];
 export type Session = ReturnType<typeof createSession>;
 
 /** In-memory state of one grill session plus the queue of events Claude has not read yet. */
-export function createSession(title: string) {
+export function createSession(title: string, mode: SessionMode) {
   const state: SessionState = {
     title,
+    mode,
     startedAt: Date.now(),
     rounds: [],
     questions: {},

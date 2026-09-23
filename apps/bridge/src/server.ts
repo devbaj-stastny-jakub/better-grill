@@ -30,6 +30,7 @@ const { values } = parseArgs({
   options: {
     port: { type: "string", default: "4777" },
     title: { type: "string", default: "Grill session" },
+    mode: { type: "string", default: "plain" },
     session: { type: "string", default: "dev" },
   },
 });
@@ -41,7 +42,11 @@ const BATCH_MS = 600;
 /** Exit after this long with no Claude wait, no open browser tab and no requests, so dead sessions don't leave bridges behind. */
 const IDLE_MS = 30 * 60_000;
 
-const session = createSession(values.title);
+if (values.mode !== "plain" && values.mode !== "docs") {
+  console.error(`--mode must be plain or docs, got ${values.mode}`);
+  process.exit(2);
+}
+const session = createSession(values.title, values.mode);
 const streams = new Set<ServerResponse>();
 let waiter: ServerResponse | null = null;
 let flushTimer: NodeJS.Timeout | undefined;

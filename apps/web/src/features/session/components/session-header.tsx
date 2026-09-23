@@ -1,7 +1,8 @@
 import type { SessionState } from "@better-grill/protocol";
-import { FireExtinguisherIcon } from "lucide-react";
+import { BookOpenTextIcon, FireExtinguisherIcon } from "lucide-react";
 import { HotkeyHint } from "@/components/hotkey-hint.tsx";
 import { ThemeToggle } from "@/components/theme-toggle.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
 import { SidebarTrigger } from "@/components/ui/sidebar.tsx";
@@ -27,6 +28,19 @@ export function SessionHeader({ state, connection, onEnd }: Props) {
       </Tooltip>
       <Separator orientation="vertical" className="h-4 data-vertical:self-center" />
       <h1 className="min-w-0 truncate text-sm font-medium">{state.title}</h1>
+      {state.mode === "docs" && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Badge variant="outline" className="hidden text-muted-foreground sm:inline-flex">
+                <BookOpenTextIcon data-icon="inline-start" />
+                With docs
+              </Badge>
+            }
+          />
+          <TooltipContent side="bottom">Claude records the glossary and ADRs as decisions settle</TooltipContent>
+        </Tooltip>
+      )}
       <div className="flex-1" />
       {questions.length > 0 && (
         <p className="hidden text-sm text-muted-foreground tabular-nums md:block">

@@ -22,6 +22,7 @@ Why a browser:
 - [Claude Code](https://code.claude.com)
 - [Node.js](https://nodejs.org) 20 or newer on your `PATH`
 - The `grilling` skill from [mattpocock/skills](https://github.com/mattpocock/skills). better-grill brings the UI; `grilling` brings the method.
+- For the docs variant, also `domain-modeling` from the same repo.
 
 ## Install
 
@@ -38,6 +39,12 @@ In any Claude Code session:
 
 ```
 /better-grill:better-grill <what you want grilled>
+```
+
+Or, to also keep a glossary (`CONTEXT.md`) and ADRs as decisions settle, like `grill-with-docs`:
+
+```
+/better-grill:better-grill-docs <what you want grilled>
 ```
 
 1. Your browser opens on the session. The terminal stays quiet; everything happens in the UI.

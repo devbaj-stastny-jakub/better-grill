@@ -1,5 +1,5 @@
 /*
- * Bundles the bridge into skills/better-grill/dist: cli.js and server.js as plain
+ * Bundles the bridge into skills/better-grill-base/dist: cli.js and server.js as plain
  * JS with no dependencies (protocol and zod inlined), plus the built web UI in web/.
  * This folder is what ships in the plugin. `--watch` rebuilds the bridge on change.
  */
@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { context, type BuildOptions } from "esbuild";
 
 const MIN_NODE = 20;
-const out = fileURLToPath(new URL("../../../skills/better-grill/dist/", import.meta.url));
+const out = fileURLToPath(new URL("../../../skills/better-grill-base/dist/", import.meta.url));
 const web = fileURLToPath(new URL("../../web/dist/", import.meta.url));
 const watch = process.argv.includes("--watch");
 

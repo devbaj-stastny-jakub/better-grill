@@ -12,7 +12,9 @@ import { serverEntry, webDist } from "./paths.ts";
 
 const USAGE = `grill — drive a better-grill UI session from Claude Code
 
-  grill start [--title T] [--port N] [--no-open]   start bridge, open browser, print {"session","url","log"}
+  grill start [--title T] [--docs] [--port N] [--no-open]
+                                                   start bridge, open browser, print {"session","url","log"}
+                                                   --docs: session also records CONTEXT.md and ADRs
   grill round  -s SESSION   < round.json           post a round of questions
   grill add    -s SESSION   < questions.json       add questions to the latest round, while unsent
   grill wait   -s SESSION                          block until the user acts, print events (run in background)
@@ -35,6 +37,7 @@ const { values, positionals } = parseArgs({
     session: { type: "string", short: "s" },
     port: { type: "string" },
     title: { type: "string" },
+    docs: { type: "boolean", default: false },
     "no-open": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -103,7 +106,11 @@ async function start() {
     process.stderr.write("warning: web UI is missing, reinstall better-grill (or run `pnpm build` in a source checkout)\n");
   }
   const logFd = openSync(logFile, "a");
-  const child = spawn(process.execPath, [...process.execArgv, serverEntry, "--port", String(chosen), "--session", session, "--title", values.title ?? "Grill session"], {
+  const serverArgs = [
+    ...["--port", String(chosen), "--session", session],
+    ...["--title", values.title ?? "Grill session", "--mode", values.docs ? "docs" : "plain"],
+  ];
+  const child = spawn(process.execPath, [...process.execArgv, serverEntry, ...serverArgs], {
     detached: true,
     stdio: ["ignore", logFd, logFd],
   });
