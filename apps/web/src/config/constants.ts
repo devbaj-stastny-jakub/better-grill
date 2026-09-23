@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   sidebarWidth: "better-grill:sidebar-width",
   chatWidth: "better-grill:chat-width",
   theme: "better-grill:theme",
+  warmUp: "better-grill:warm-up",
 } as const;
 
 /** How long a POST to the bridge may take before we call it failed. */

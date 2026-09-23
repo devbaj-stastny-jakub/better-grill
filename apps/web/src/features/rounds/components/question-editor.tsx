@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Question } from "@better-grill/protocol";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { SparklesIcon } from "lucide-react";
+import { CircleCheckIcon, SparklesIcon } from "lucide-react";
 import { ErrorNote } from "@/components/feedback/error-note.tsx";
 import { LockedNote } from "@/components/feedback/locked-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
@@ -16,10 +16,10 @@ import { HOTKEYS } from "@/config/hotkeys.ts";
 import { useAction } from "@/hooks/use-action.ts";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
 import { cn } from "@/lib/utils.ts";
-import { anchors } from "@/utils/scroll.ts";
+import { anchors } from "@/utils/anchors.ts";
 import { insertNewline } from "@/utils/text-input.ts";
 import { answerQuestion } from "../api/answer-question.ts";
-import { focusFirstAnswerIn, focusNextQuestionAfter, moveAnswerFocus, settleReveal } from "../utils/answer-nav.ts";
+import { moveAnswerFocus } from "../utils/answer-nav.ts";
 import { setActiveQuestion, useIsActiveQuestion } from "../stores/active-question.ts";
 import { DiscussButton } from "./discuss-button.tsx";
 import { OptionList } from "./option-list.tsx";
@@ -30,16 +30,14 @@ type Props = {
   discussing: boolean;
   unread: number;
   onDiscuss: () => void;
-  /** Back out of changing an existing answer. Unmounting drops the edits. */
-  onCancel: () => void;
-  /** Focus the first option on mount (the user pressed "Change"). */
-  focusOnOpen?: boolean;
+  /** The bridge took the answer: move on. */
+  onLockedIn: () => void;
 };
 
 type FocusZone = "option" | "text" | null;
 
-/** Open question, or an answered one being changed: pick options, write text, lock in. */
-export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, onCancel, focusOnOpen = false }: Props) {
+/** A question on its own page, open or answered: pick options, write text, lock in (or update the answer). */
+export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, onLockedIn }: Props) {
   const locked = lock !== null;
   const [selected, setSelected] = useState<string[]>(question.answer?.optionIds ?? []);
   const [text, setText] = useState(question.answer?.text ?? "");
@@ -53,10 +51,21 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
     });
   };
 
+  const saved = question.answer;
+  const changing = question.status === "answered";
+  const unchanged = (optionIds: string[]) =>
+    sameIds(optionIds, saved?.optionIds ?? []) && text.trim() === (saved?.text ?? "").trim();
+  const dirty = changing && !unchanged(selected);
+
   const sending = answerAction.pending;
   const hasInput = selected.length > 0 || text.trim().length > 0;
-  const canSend = !locked && !sending && hasInput;
-  const changing = question.status === "answered";
+  const canSend = !locked && !sending && hasInput && (!changing || dirty);
+
+  const discard = () => {
+    answerAction.clearError();
+    setSelected(saved?.optionIds ?? []);
+    setText(saved?.text ?? "");
+  };
 
   const card = useRef<HTMLDivElement>(null);
   const answerBox = useRef<HTMLTextAreaElement>(null);
@@ -64,10 +73,13 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
 
   const send = async (optionIds = selected) => {
     if (locked || sending || (optionIds.length === 0 && !text.trim())) return;
+    // Enter on the answer already locked in: nothing to save, carry on.
+    if (changing && unchanged(optionIds)) {
+      onLockedIn();
+      return;
+    }
     const ok = await answerAction.run(question.id, { optionIds, text: text.trim() || undefined });
-    // Carry on to the next open question, unless the user already moved elsewhere.
-    const focus = document.activeElement;
-    if (ok && card.current && (focus === document.body || card.current.contains(focus))) focusNextQuestionAfter(card.current);
+    if (ok) onLockedIn();
   };
 
   // Enter on an option: single-select picks that one; multi-select keeps the ticks (or takes this one if none).
@@ -77,14 +89,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
     void send(optionIds);
   };
 
-  useEffect(() => {
-    if (focusOnOpen && card.current) focusFirstAnswerIn(card.current);
-  }, [focusOnOpen]);
-
-  // This editor collapsing shifts the page; let the keyboard jump that led away from it land cleanly.
-  useEffect(() => settleReveal, []);
-
-  // One editor at a time owns ⌘↵; the others stay registered but silent.
+  // The editor last clicked owns ⌘↵ (Safari buttons do not keep focus on click).
   // In a text box ⌘↵ means a new line (below), so it only locks in from elsewhere.
   const active = useIsActiveQuestion(question.id);
   useHotkey(
@@ -123,7 +128,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
         event.preventDefault();
         void send();
       }
-      // Anywhere else (Discuss, Cancel) Enter keeps its normal meaning.
+      // Anywhere else (Discuss, Discard changes) Enter keeps its normal meaning.
     },
     scoped,
   );
@@ -173,7 +178,18 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
               Edited by Claude
             </Badge>
           )}
-          {changing && <Badge variant="outline">Changing answer</Badge>}
+          {changing && (
+            <Badge variant="secondary" className="bg-success/10 text-success">
+              <CircleCheckIcon data-icon="inline-start" />
+              {saved?.sent ? "Sent to Claude" : "Locked in"}
+            </Badge>
+          )}
+          {saved?.by === "claude" && (
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
+              <SparklesIcon data-icon="inline-start" />
+              Resolved in discussion by Claude
+            </Badge>
+          )}
         </div>
         <CardTitle className="text-xl font-semibold tracking-tight text-balance">{question.title}</CardTitle>
         {question.body && (
@@ -248,9 +264,9 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
             {question.options.length > 0 ? "Pick or type" : "Type an answer"}
           </span>
         )}
-        {changing && (
-          <Button variant="ghost" disabled={sending} onClick={onCancel}>
-            Cancel
+        {dirty && (
+          <Button variant="ghost" disabled={sending} onClick={discard}>
+            Discard changes
           </Button>
         )}
         <Button disabled={!canSend} onClick={() => void send()}>
@@ -259,6 +275,10 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
       </CardFooter>
     </Card>
   );
+}
+
+function sameIds(a: string[], b: string[]) {
+  return a.length === b.length && a.every((id) => b.includes(id));
 }
 
 function KeyHints({ children }: { children: React.ReactNode }) {

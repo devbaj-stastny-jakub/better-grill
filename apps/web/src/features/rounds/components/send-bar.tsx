@@ -10,12 +10,19 @@ import { useAction } from "@/hooks/use-action.ts";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
 import { cn } from "@/lib/utils.ts";
 import { liveQuestions } from "@/utils/question.ts";
-import { anchors, scrollToAnchor } from "@/utils/scroll.ts";
+import { anchors } from "@/utils/anchors.ts";
 import { sendRound } from "../api/send-round.ts";
 import { ClaudeWorking } from "./claude-working.tsx";
 
+type Props = {
+  state: SessionState;
+  lock: LockReason;
+  /** Show a step, by its anchor id. */
+  onJump: (anchor: string) => void;
+};
+
 /** Answers wait in the bridge until the user sends them. Needs every question answered. */
-export function SendBar({ state, lock }: { state: SessionState; lock: LockReason }) {
+export function SendBar({ state, lock, onJump }: Props) {
   const sendAction = useAction(sendRound);
   const sending = sendAction.pending;
   const button = useRef<HTMLButtonElement>(null);
@@ -59,7 +66,7 @@ export function SendBar({ state, lock }: { state: SessionState; lock: LockReason
                     key={q.id}
                     variant="outline"
                     className="font-mono text-muted-foreground hover:bg-muted hover:text-foreground"
-                    render={<button type="button" onClick={() => scrollToAnchor(anchors.question(q.id))} />}
+                    render={<button type="button" onClick={() => onJump(anchors.question(q.id))} />}
                   >
                     {q.id}
                   </Badge>

@@ -19,28 +19,30 @@ import {
 import { cn } from "@/lib/utils.ts";
 import { roundLabel } from "@/utils/format.ts";
 import { liveQuestions, roundQuestions } from "@/utils/question.ts";
-import { anchors, scrollToAnchor } from "@/utils/scroll.ts";
-import { useQuestionInView } from "../hooks/use-question-in-view.ts";
+import { anchors } from "@/utils/anchors.ts";
 import { useSidebarHotkey } from "../hooks/use-sidebar-hotkey.ts";
 import { SIDEBAR_WIDTH, useSidebarWidth } from "../hooks/use-sidebar-width.ts";
 import { QuestionNavItem } from "./question-nav-item.tsx";
 
 type Props = {
   state: SessionState;
+  /** Anchor id of the step on screen. */
+  current: string | null;
+  /** Show a step, by its anchor id. */
+  onJump: (anchor: string) => void;
   chatFor: string | null;
   unread: (q: Question) => number;
   onOpenChat: (id: string) => void;
 };
 
-/** Rounds and questions. Drag the right edge to resize; collapses to a strip of numbered status chips. */
-export function AppSidebar({ state, chatFor, unread, onOpenChat }: Props) {
-  const current = useQuestionInView(state);
+/** Rounds and questions; a click shows that step (a round title shows its review). Drag the right edge to resize; collapses to a strip of numbered status chips. */
+export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat }: Props) {
   const { isMobile, setOpenMobile, state: sidebarState } = useSidebar();
   const [width, setWidth] = useSidebarWidth();
   useSidebarHotkey();
 
   const jump = (anchor: string) => {
-    scrollToAnchor(anchor);
+    onJump(anchor);
     if (isMobile) setOpenMobile(false);
   };
 
@@ -62,7 +64,10 @@ export function AppSidebar({ state, chatFor, unread, onOpenChat }: Props) {
             <SidebarGroup key={round.number}>
               <SidebarGroupLabel
                 render={<button type="button" onClick={() => jump(anchors.round(round.number))} />}
-                className="gap-2 hover:bg-sidebar-accent group-data-[collapsible=icon]:pointer-events-none"
+                className={cn(
+                  "gap-2 hover:bg-sidebar-accent group-data-[collapsible=icon]:pointer-events-none",
+                  current === anchors.round(round.number) && "bg-sidebar-accent text-sidebar-accent-foreground",
+                )}
               >
                 <span className="font-semibold text-primary tabular-nums">{roundLabel(round.number)}</span>
                 <span className="min-w-0 flex-1 truncate text-left">{round.title ?? `Round ${round.number}`}</span>
@@ -78,7 +83,7 @@ export function AppSidebar({ state, chatFor, unread, onOpenChat }: Props) {
                   <QuestionNavItem
                     key={question.id}
                     question={question}
-                    active={current === question.id || chatFor === question.id}
+                    active={current === anchors.question(question.id) || chatFor === question.id}
                     unread={unread(question)}
                     onJump={() => jump(anchors.question(question.id))}
                     onOpenChat={() => onOpenChat(question.id)}
@@ -93,7 +98,12 @@ export function AppSidebar({ state, chatFor, unread, onOpenChat }: Props) {
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="Summary" onClick={() => jump(anchors.summary)} className="text-primary">
+                <SidebarMenuButton
+                  tooltip="Summary"
+                  isActive={current === anchors.summary}
+                  onClick={() => jump(anchors.summary)}
+                  className="text-primary"
+                >
                   <ClipboardCheckIcon />
                   <span>Summary</span>
                 </SidebarMenuButton>
@@ -147,7 +157,9 @@ function SessionProgress({ state }: { state: SessionState }) {
 function SidebarEmpty({ ended }: { ended: boolean }) {
   return (
     <SidebarGroup>
-      {!ended && (
+      {ended ? (
+        <p className="px-2 pt-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">No rounds were posted.</p>
+      ) : (
         <SidebarMenu>
           {[0, 1, 2].map((i) => (
             <SidebarMenuItem key={i}>
@@ -156,9 +168,6 @@ function SidebarEmpty({ ended }: { ended: boolean }) {
           ))}
         </SidebarMenu>
       )}
-      <p className="px-2 pt-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-        {ended ? "No rounds were posted." : "Rounds and questions show up here as Claude posts them."}
-      </p>
     </SidebarGroup>
   );
 }

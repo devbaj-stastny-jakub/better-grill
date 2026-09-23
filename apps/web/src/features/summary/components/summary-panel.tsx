@@ -11,10 +11,17 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { useAction } from "@/hooks/use-action.ts";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
-import { anchors } from "@/utils/scroll.ts";
+import { anchors } from "@/utils/anchors.ts";
 import { respondSummary } from "../api/respond-summary.ts";
 
-export function SummaryPanel({ summary, lock }: { summary: Summary; lock: LockReason }) {
+type Props = {
+  summary: Summary;
+  lock: LockReason;
+  /** The user agreed; the session is over from their side. */
+  onConfirmed: () => void;
+};
+
+export function SummaryPanel({ summary, lock, onConfirmed }: Props) {
   const [objecting, setObjecting] = useState(false);
   const [text, setText] = useState("");
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -27,6 +34,7 @@ export function SummaryPanel({ summary, lock }: { summary: Summary; lock: LockRe
     if (ok) {
       setObjecting(false);
       setText("");
+      if (confirmed) onConfirmed();
     }
   };
 

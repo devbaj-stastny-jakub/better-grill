@@ -8,7 +8,7 @@ export const HOTKEYS = {
   submitAnswer: "Enter",
   /** New line in the answer and discussion boxes (Shift+Enter works too). */
   newLine: "Mod+Enter",
-  /** Walk options and answer fields, across questions. */
+  /** Walk options and answer fields of the question on screen. */
   nextAnswer: "ArrowDown",
   previousAnswer: "ArrowUp",
   /** Send the discussion draft. */

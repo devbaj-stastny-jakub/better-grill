@@ -1,6 +1,6 @@
 import type { Question } from "@better-grill/protocol";
 import { Badge } from "@/components/ui/badge.tsx";
-import { anchors } from "@/utils/scroll.ts";
+import { anchors } from "@/utils/anchors.ts";
 
 export function DroppedQuestion({ question }: { question: Question }) {
   return (

@@ -40,7 +40,7 @@ try {
   await page.goto(url);
   await page.getByText("Who is the first user?").first().waitFor();
 
-  // Mid-round: first question locked in, second one picked, the rest still open.
+  // Mid-round: first question locked in (the page steps on to the second), second one picked.
   await page.getByRole("radio", { name: /Solo developers/ }).click();
   await page.keyboard.press("ControlOrMeta+Enter");
   await page.getByRole("radio", { name: /JSON file per session/ }).click();
@@ -50,7 +50,7 @@ try {
   await page.screenshot({ path: join(outDir, "round.png") });
 
   // A discussion thread on the second question.
-  await page.getByRole("button", { name: "Discuss" }).nth(1).click();
+  await page.getByRole("button", { name: "Discuss" }).first().click();
   const input = page.getByPlaceholder("Ask about this question…");
   await input.fill("Won't JSON files get messy once I run a few sessions at the same time?");
   await input.press("Enter");
