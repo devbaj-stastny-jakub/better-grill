@@ -1,6 +1,6 @@
 {
   "name": "better-grill",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Run grill sessions in a local browser UI instead of the terminal: rounds of questions with options and a recommendation, a discussion thread per question, driven by your open Claude Code session.",
   "author": {
     "name": "Jakub Stastny",

@@ -1,6 +1,6 @@
 {
   "name": "better-grill",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Grill sessions for Claude Code, in your browser instead of the terminal.",
   "keywords": [
     "ai",
