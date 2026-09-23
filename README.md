@@ -62,7 +62,7 @@ You also need [Node.js](https://nodejs.org) 20+ and the [`grilling`](https://git
 
 ## What you get
 
-![A round in better-grill: a long question with a comparison table, Claude's recommended option picked, and the Lock in bar at the bottom](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/round.png)
+![A round in better-grill: a question with a comparison table and Claude's pick selected, its discussion thread open alongside](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/discussion.png)
 
 <table>
 <tr>
@@ -76,8 +76,6 @@ You also need [Node.js](https://nodejs.org) 20+ and the [`grilling`](https://git
 <td width="33%" valign="top"><b>Keyboard first</b><br><kbd>↑</kbd> <kbd>↓</kbd> walk the options, <kbd>Enter</kbd> locks in, <kbd>D</kbd> opens the discussion, <kbd>[</kbd> folds the sidebar.</td>
 </tr>
 </table>
-
-![A discussion thread open next to the question it is about](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/discussion.png)
 
 ## Built into Claude Code
 

@@ -66,7 +66,7 @@ Features never import from each other; only `app/` combines them. Theme tokens (
 The README images in `.github/assets/` come from the demo rounds, captured with Playwright in dark mode:
 
 ```sh
-pnpm screenshots  # builds, starts a bridge, posts demo rounds, saves round.png, discussion.png and hero.png
+pnpm screenshots  # builds, starts a bridge, posts demo rounds, saves discussion.png and hero.png
 ```
 
 The hero is `apps/bridge/scripts/hero.html` (pitch, brand mark, the app's dark tokens) with the fresh discussion shot framed in a window; edit its copy there.

@@ -61,11 +61,7 @@ try {
   await page.getByRole("radio", { name: /Solo developers/ }).click();
   await page.keyboard.press("ControlOrMeta+Enter");
   await page.getByRole("radio", { name: /JSON file per session/ }).click();
-  await settle(page);
-  await page.evaluate("window.scrollTo(0, 0)");
   mkdirSync(outDir, { recursive: true });
-  await page.screenshot({ path: join(outDir, "round.png") });
-  await roundCorners(join(outDir, "round.png"), 16);
 
   // A discussion thread on the second question.
   await page.getByRole("button", { name: "Discuss" }).first().click();
@@ -102,7 +98,7 @@ try {
   await roundCorners(join(outDir, "discussion.png"), 16);
   await roundCorners(join(outDir, "hero.png"), 24);
 
-  console.log(`Saved round.png, discussion.png and hero.png to ${outDir}`);
+  console.log(`Saved discussion.png and hero.png to ${outDir}`);
 } finally {
   await browser.close();
   grill("stop", "-s", session);
