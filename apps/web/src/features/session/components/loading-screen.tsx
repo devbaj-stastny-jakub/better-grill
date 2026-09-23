@@ -8,20 +8,22 @@ import { WarmUp } from "./warm-up.tsx";
  */
 export function LoadingScreen() {
   return (
-    <div className="flex min-h-svh bg-background" aria-busy>
-      <aside className="hidden w-80 shrink-0 flex-col border-r bg-sidebar md:flex">
-        <div className="flex h-14 items-center gap-2 border-b px-3">
-          <BrandMark />
-          <span className="text-sm font-semibold tracking-tight">better grill</span>
-        </div>
-        <div className="p-2">
-          {[0, 1, 2].map((i) => (
-            <SidebarMenuSkeleton key={i} showIcon />
-          ))}
-        </div>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="h-14 shrink-0 border-b" />
+    <div className="flex min-h-svh" aria-busy>
+      <div className="hidden w-80 shrink-0 p-3 md:flex">
+        <aside className="flex flex-1 flex-col rounded-xl bg-sidebar shadow-md ring-1 ring-sidebar-border">
+          <div className="flex h-12 items-center gap-2 border-b px-2">
+            <BrandMark />
+            <span className="text-sm font-semibold tracking-tight">better grill</span>
+          </div>
+          <div className="p-2">
+            {[0, 1, 2].map((i) => (
+              <SidebarMenuSkeleton key={i} showIcon />
+            ))}
+          </div>
+        </aside>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col pt-3 pr-3">
+        <header className="h-12 shrink-0 rounded-xl border bg-background/80 shadow-md" />
         <main className="grid flex-1 place-items-center px-4 pt-8 pb-[16svh]">
           <WarmUp stage="connecting" />
         </main>

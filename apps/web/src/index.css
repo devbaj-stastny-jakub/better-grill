@@ -7,70 +7,74 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * shadcn tokens. Stone base with an orange accent (the grill). Semantics:
- * primary = needs you / your pick, success = answered, destructive = errors
- * and a lost bridge.
+ * shadcn tokens. Cool near-black layers (after the Hexora schema builder shot)
+ * with a hot orange accent (the grill). Semantics: primary = needs you / your
+ * pick, success = answered, destructive = errors and a lost bridge.
+ * Layout is a canvas: `background` + `canvas-dot` is the dotted floor, and the
+ * chrome (sidebar, header, discussion) floats above it.
  */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.985 0.002 75);
-  --foreground: oklch(0.27 0.008 60);
-  --card: oklch(0.997 0.001 75);
-  --card-foreground: oklch(0.27 0.008 60);
-  --popover: oklch(0.997 0.001 75);
-  --popover-foreground: oklch(0.27 0.008 60);
-  --primary: oklch(0.645 0.15 46);
-  --primary-foreground: oklch(0.99 0.004 75);
-  --secondary: oklch(0.955 0.004 70);
-  --secondary-foreground: oklch(0.3 0.008 60);
-  --muted: oklch(0.955 0.004 70);
-  --muted-foreground: oklch(0.54 0.012 60);
-  --accent: oklch(0.955 0.004 70);
-  --accent-foreground: oklch(0.3 0.008 60);
-  --destructive: oklch(0.58 0.16 27);
-  --success: oklch(0.6 0.11 160);
-  --border: oklch(0.91 0.005 70);
-  --input: oklch(0.91 0.005 70);
-  --ring: oklch(0.645 0.15 46);
-  --sidebar: oklch(0.97 0.003 70);
-  --sidebar-foreground: oklch(0.27 0.008 60);
-  --sidebar-primary: oklch(0.645 0.15 46);
-  --sidebar-primary-foreground: oklch(0.99 0.004 75);
-  --sidebar-accent: oklch(0.935 0.012 60);
-  --sidebar-accent-foreground: oklch(0.3 0.008 60);
-  --sidebar-border: oklch(0.91 0.005 70);
-  --sidebar-ring: oklch(0.645 0.15 46);
+  --background: oklch(0.985 0.003 270);
+  --canvas-dot: oklch(0.92 0.006 275);
+  --foreground: oklch(0.2 0.01 275);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.01 275);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.01 275);
+  --primary: oklch(0.63 0.19 42);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0.006 275);
+  --secondary-foreground: oklch(0.2 0.01 275);
+  --muted: oklch(0.96 0.006 275);
+  --muted-foreground: oklch(0.52 0.012 285);
+  --accent: oklch(0.96 0.006 275);
+  --accent-foreground: oklch(0.2 0.01 275);
+  --destructive: oklch(0.55 0.21 5);
+  --success: oklch(0.58 0.12 170);
+  --border: oklch(0.92 0.008 275);
+  --input: oklch(0.92 0.008 275);
+  --ring: oklch(0.63 0.19 42);
+  --sidebar: oklch(0.97 0.004 250);
+  --sidebar-foreground: oklch(0.2 0.01 275);
+  --sidebar-primary: oklch(0.63 0.19 42);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.93 0.01 260);
+  --sidebar-accent-foreground: oklch(0.2 0.01 275);
+  --sidebar-border: oklch(0.92 0.008 275);
+  --sidebar-ring: oklch(0.63 0.19 42);
 }
 
-/* Warm charcoal rather than black, off-white rather than white. */
+/* Stepped layers: sidebar < page < card < popover < muted, with hairline borders. */
 .dark {
-  --background: oklch(0.215 0.006 60);
-  --foreground: oklch(0.92 0.006 75);
-  --card: oklch(0.245 0.006 60);
-  --card-foreground: oklch(0.92 0.006 75);
-  --popover: oklch(0.265 0.007 60);
-  --popover-foreground: oklch(0.92 0.006 75);
-  --primary: oklch(0.645 0.145 47);
-  --primary-foreground: oklch(0.99 0.004 75);
-  --secondary: oklch(0.295 0.007 60);
-  --secondary-foreground: oklch(0.92 0.006 75);
-  --muted: oklch(0.295 0.007 60);
-  --muted-foreground: oklch(0.7 0.01 65);
-  --accent: oklch(0.295 0.007 60);
-  --accent-foreground: oklch(0.92 0.006 75);
-  --destructive: oklch(0.67 0.14 25);
-  --success: oklch(0.72 0.11 160);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.68 0.14 48);
-  --sidebar: oklch(0.2 0.006 60);
-  --sidebar-foreground: oklch(0.92 0.006 75);
-  --sidebar-primary: oklch(0.645 0.145 47);
-  --sidebar-primary-foreground: oklch(0.99 0.004 75);
-  --sidebar-accent: oklch(0.28 0.008 60);
-  --sidebar-accent-foreground: oklch(0.92 0.006 75);
-  --sidebar-border: oklch(1 0 0 / 9%);
-  --sidebar-ring: oklch(0.68 0.14 48);
+  --background: oklch(0.194 0.005 248);
+  --canvas-dot: oklch(0.25 0.008 265);
+  --foreground: oklch(0.97 0.002 265);
+  --card: oklch(0.232 0.01 277);
+  --card-foreground: oklch(0.97 0.002 265);
+  --popover: oklch(0.254 0.012 277);
+  --popover-foreground: oklch(0.97 0.002 265);
+  --primary: oklch(0.69 0.19 45);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.279 0.013 279);
+  --secondary-foreground: oklch(0.97 0.002 265);
+  --muted: oklch(0.279 0.013 279);
+  --muted-foreground: oklch(0.62 0.009 290);
+  --accent: oklch(0.279 0.013 279);
+  --accent-foreground: oklch(0.97 0.002 265);
+  --destructive: oklch(0.64 0.21 5);
+  --success: oklch(0.76 0.12 170);
+  --border: oklch(0.298 0.013 273);
+  --input: oklch(0.32 0.013 273);
+  --ring: oklch(0.69 0.19 45);
+  --sidebar: oklch(0.18 0.004 230);
+  --sidebar-foreground: oklch(0.97 0.002 265);
+  --sidebar-primary: oklch(0.69 0.19 45);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.254 0.007 248);
+  --sidebar-accent-foreground: oklch(0.97 0.002 265);
+  --sidebar-border: oklch(0.298 0.013 273);
+  --sidebar-ring: oklch(0.69 0.19 45);
 }
 
 @theme inline {
@@ -78,6 +82,7 @@
   --font-mono: "Geist Mono Variable", ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --color-background: var(--background);
+  --color-canvas-dot: var(--canvas-dot);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -144,6 +149,25 @@
       opacity: 0;
     }
   }
+
+  /* Waiting on Claude (components/feedback/coals.tsx). */
+  --animate-coal: coal 1.2s ease-in-out infinite both;
+
+  /* One coal catching: swells and glows, then cools back down. */
+  @keyframes coal {
+    0%,
+    70%,
+    100% {
+      transform: scale(0.7);
+      opacity: 0.35;
+      box-shadow: 0 0 0 0 transparent;
+    }
+    35% {
+      transform: scale(1);
+      opacity: 1;
+      box-shadow: 0 0 0.5em 0.05em color-mix(in oklab, currentColor 70%, transparent);
+    }
+  }
 }
 
 /* Coals: catch from dark, then glow unevenly. */
@@ -176,7 +200,7 @@
     @apply font-sans;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply canvas text-foreground antialiased;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -187,9 +211,19 @@
   }
 }
 
+/* The dotted canvas. Fixed, so the dots stay put while the page scrolls, and any patch of it lines up with the body's. */
+@utility canvas {
+  background-color: var(--background);
+  background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.5px);
+  background-size: 20px 20px;
+  background-attachment: fixed;
+}
+
 /* A ResizeHandle is being dragged: follow the pointer, don't animate towards it. Unlayered so it beats utilities. */
 [data-resizing] [data-slot="sidebar-gap"],
-[data-resizing] [data-slot="sidebar-container"] {
+[data-resizing] [data-slot="sidebar-container"],
+[data-resizing] [data-slot="sidebar-inset"],
+[data-resizing] [data-slot="discussion-dock"] {
   transition: none;
 }
 

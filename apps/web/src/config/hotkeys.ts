@@ -15,6 +15,8 @@ export const HOTKEYS = {
   sendChat: "Enter",
   /** Close the discussion when the draft is empty. */
   closeChat: "Escape",
+  /** Open or close the discussion of the question on screen. */
+  discuss: "D",
   /** Collapse or expand the sidebar. ⌘B also works (shadcn sidebar built-in). */
   toggleSidebar: "[",
 } as const satisfies Record<string, RegisterableHotkey>;

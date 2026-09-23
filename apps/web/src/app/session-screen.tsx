@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Question } from "@better-grill/protocol";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { CrashedBlock } from "@/components/errors/crashed-block.tsx";
 import { ErrorBoundary } from "@/components/errors/error-boundary.tsx";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
 import { STORAGE_KEYS } from "@/config/constants.ts";
-import { DiscussionDock } from "@/features/discussion/components/discussion-dock.tsx";
+import { HOTKEYS } from "@/config/hotkeys.ts";
+import { DISCUSSION_DOCK_MS, DiscussionDock } from "@/features/discussion/components/discussion-dock.tsx";
 import { DiscussionPanel } from "@/features/discussion/components/discussion-panel.tsx";
 import { useUnread } from "@/features/discussion/hooks/use-unread.ts";
 import { AppSidebar } from "@/features/navigation/components/app-sidebar.tsx";
@@ -12,6 +14,7 @@ import { QuestionCard } from "@/features/rounds/components/question-card.tsx";
 import { QuestionRow } from "@/features/rounds/components/question-row.tsx";
 import { RoundSection } from "@/features/rounds/components/round-section.tsx";
 import { SendBar } from "@/features/rounds/components/send-bar.tsx";
+import { SendButton } from "@/features/rounds/components/send-button.tsx";
 import { focusStep } from "@/features/rounds/utils/answer-nav.ts";
 import { useSessionStream } from "@/features/session/api/use-session-stream.ts";
 import { ClosingOverlay } from "@/features/session/components/closing-overlay.tsx";
@@ -23,6 +26,7 @@ import { SessionHeader } from "@/features/session/components/session-header.tsx"
 import { UnreachableScreen } from "@/features/session/components/unreachable-screen.tsx";
 import { useStep } from "@/features/stepper/hooks/use-step.ts";
 import { SummaryPanel } from "@/features/summary/components/summary-panel.tsx";
+import { useLingering } from "@/hooks/use-lingering.ts";
 import { usePersistentState } from "@/hooks/use-persistent-state.ts";
 import { lockReason } from "@/lib/lock.ts";
 import { cn } from "@/lib/utils.ts";
@@ -36,12 +40,25 @@ export function SessionScreen() {
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const [closing, setClosing] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = usePersistentState(STORAGE_KEYS.sidebarOpen, true);
+  // The question page's floating action bar renders into this, at the very end of the page.
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
   const chatQuestion = chatFor ? state?.questions[chatFor] : undefined;
+  // Still rendered while the dock slides out.
+  const dockedFor = useLingering(chatFor, DISCUSSION_DOCK_MS);
+  const dockedQuestion = dockedFor ? state?.questions[dockedFor] : undefined;
   const closeChat = useCallback(() => setChatFor(null), []);
   const unread = useUnread(chatQuestion);
 
   const { current, go, lockedIn } = useStep(state);
+  const onScreen = current?.kind === "question" ? current.id : null;
+
+  // An open discussion follows the step: it switches to each question as it comes on screen.
+  useEffect(() => {
+    if (onScreen) setChatFor((now) => (now && now !== onScreen ? onScreen : now));
+  }, [onScreen]);
+
+  useHotkey(HOTKEYS.discuss, () => setChatFor((now) => (onScreen && now !== onScreen ? onScreen : null)));
 
   // A new step starts at the top, with the keyboard on its first option.
   useEffect(() => {
@@ -58,6 +75,7 @@ export function SessionScreen() {
   const lock = lockReason(state, connection);
   const live = liveQuestions(Object.values(state.questions));
   const round = current?.kind === "summary" ? undefined : state.rounds.find((r) => r.number === current?.round);
+  const actionBar = current?.kind === "question";
 
   /** Shared by the question page and the review rows. */
   const questionProps = (question: Question) => ({
@@ -76,7 +94,7 @@ export function SessionScreen() {
         key={`${id}-${question.editedAt ?? 0}`}
         fallback={(error, reset) => <CrashedBlock what={`Question ${id}`} error={error} onReset={reset} />}
       >
-        <QuestionCard {...questionProps(question)} lock={lock} onLockedIn={() => lockedIn(id)} />
+        <QuestionCard {...questionProps(question)} lock={lock} onLockedIn={() => lockedIn(id)} actionsSlot={actionsSlot} />
       </ErrorBoundary>
     );
   };
@@ -107,9 +125,24 @@ export function SessionScreen() {
         onOpenChat={setChatFor}
       />
 
-      <SidebarInset className="min-w-0">
-        <SessionHeader state={state} connection={connection} onEnd={() => setConfirmingEnd(true)} />
-        <ConnectionBanner state={state} connection={connection} />
+      {/* Transparent, so the dotted canvas shows between the floating panels. The right padding is the gap before the screen edge or the discussion. */}
+      <SidebarInset
+        className={cn(
+          // Eases aside for the discussion in step with the dock's slide.
+          "min-w-0 bg-transparent pr-3 transition-[padding] duration-200 ease-linear",
+          chatQuestion && "pr-[calc(var(--chat-w)+0.75rem)]",
+        )}
+      >
+        {/* The gaps around the header stay click-through; a strip of canvas above it hides the page scrolling by. */}
+        <div className="pointer-events-none sticky top-0 z-30 space-y-2 pt-3 *:pointer-events-auto before:absolute before:inset-x-0 before:top-0 before:h-3 before:canvas">
+          <SessionHeader
+            state={state}
+            connection={connection}
+            onEnd={() => setConfirmingEnd(true)}
+            actions={<SendButton state={state} lock={lock} onJump={go} />}
+          />
+          <ConnectionBanner state={state} connection={connection} />
+        </div>
 
         {state.rounds.length === 0 ? (
           // Optical centre: a little above the middle, like the loading screen.
@@ -117,8 +150,8 @@ export function SessionScreen() {
             {state.ended ? <EndedEmpty /> : <WaitingForRound state={state} />}
           </div>
         ) : (
-          <div className={cn("px-4 pt-8 pb-32 sm:px-8", chatQuestion && "xl:pr-[calc(var(--chat-w)+2rem)]")}>
-            <div className="mx-auto max-w-3xl">
+          <div className={cn("px-8 pt-8", actionBar ? "flex flex-1 flex-col pb-3" : "pb-32")}>
+            <div className={cn("mx-auto max-w-3xl", actionBar && "flex w-full flex-1 flex-col")}>
               {current && (
                 // Keyed by step so each one fades in fresh.
                 <div
@@ -142,26 +175,40 @@ export function SessionScreen() {
                 </div>
               )}
 
-              <SendBar state={state} lock={lock} onJump={go} />
+              <SendBar
+                state={state}
+                lock={lock}
+                onJump={go}
+                showBar={current?.kind === "review"}
+              />
+
+              {actionBar && (
+                <>
+                  {/* Room to scroll the question clear of the bar's fade; grows so a short page still puts the bar at the bottom. */}
+                  <div aria-hidden className="min-h-20 flex-1" />
+                  {/* Last in the page, so where it rests at the end is where it sticks while scrolling: the bottom. */}
+                  <div ref={setActionsSlot} className="sticky bottom-3 z-20" />
+                </>
+              )}
             </div>
           </div>
         )}
       </SidebarInset>
 
-      {chatQuestion && (
-        <DiscussionDock>
+      <DiscussionDock open={!!chatQuestion}>
+        {dockedQuestion && (
           <ErrorBoundary
-            key={chatQuestion.id}
+            key={dockedQuestion.id}
             fallback={(error, reset) => (
-              <div className="h-full border-l bg-background p-4">
+              <div className="h-full bg-background p-4">
                 <CrashedBlock what="Discussion" error={error} onReset={reset} />
               </div>
             )}
           >
-            <DiscussionPanel question={chatQuestion} lock={lock} claude={state.claude} onClose={closeChat} />
+            <DiscussionPanel question={dockedQuestion} lock={lock} claude={state.claude} onClose={closeChat} />
           </ErrorBoundary>
-        </DiscussionDock>
-      )}
+        )}
+      </DiscussionDock>
 
       <EndSessionDialog
         open={confirmingEnd}

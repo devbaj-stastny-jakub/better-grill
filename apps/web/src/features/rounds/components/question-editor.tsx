@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Question } from "@better-grill/protocol";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { CircleCheckIcon, SparklesIcon } from "lucide-react";
@@ -10,7 +11,7 @@ import { Markdown } from "@/components/markdown.tsx";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { HOTKEYS } from "@/config/hotkeys.ts";
 import { useAction } from "@/hooks/use-action.ts";
@@ -32,12 +33,14 @@ type Props = {
   onDiscuss: () => void;
   /** The bridge took the answer: move on. */
   onLockedIn: () => void;
+  /** Where the floating action bar goes: a slot at the end of the page, stuck to the bottom of the screen. */
+  actionsSlot?: HTMLElement | null;
 };
 
 type FocusZone = "option" | "text" | null;
 
 /** A question on its own page, open or answered: pick options, write text, lock in (or update the answer). */
-export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, onLockedIn }: Props) {
+export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, onLockedIn, actionsSlot }: Props) {
   const locked = lock !== null;
   const [selected, setSelected] = useState<string[]>(question.answer?.optionIds ?? []);
   const [text, setText] = useState(question.answer?.text ?? "");
@@ -150,7 +153,50 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
 
   const kind = question.options.length === 0 ? "Open answer" : question.multiSelect ? "Pick any" : "Pick one";
 
-  return (
+  const actions = (
+    <>
+      <DiscussButton
+        count={question.chat.length}
+        unread={unread}
+        active={discussing}
+        onClick={onDiscuss}
+        hotkey={HOTKEYS.discuss}
+      />
+      <div className="flex-1" />
+      {lock ? (
+        <LockedNote>{LOCK_COPY[lock]}</LockedNote>
+      ) : zone === "option" ? (
+        <KeyHints>
+          <HotkeyHint hotkey={HOTKEYS.previousAnswer} />
+          <HotkeyHint hotkey={HOTKEYS.nextAnswer} /> move
+          <HotkeyHint hotkey={HOTKEYS.submitAnswer} className="ml-1.5" /> lock in
+        </KeyHints>
+      ) : zone === "text" ? (
+        <KeyHints>
+          <HotkeyHint hotkey={HOTKEYS.submitAnswer} /> lock in
+          <HotkeyHint hotkey={HOTKEYS.newLine} className="ml-1.5" /> new line
+        </KeyHints>
+      ) : active && hasInput ? (
+        <KeyHints>
+          <HotkeyHint hotkey={HOTKEYS.lockIn} /> lock in
+        </KeyHints>
+      ) : (
+        <span className="hidden text-xs text-muted-foreground sm:inline">
+          {question.options.length > 0 ? "Pick or type" : "Type an answer"}
+        </span>
+      )}
+      {dirty && (
+        <Button variant="ghost" disabled={sending} onClick={discard}>
+          Discard changes
+        </Button>
+      )}
+      <Button disabled={!canSend} onClick={() => void send()}>
+        <PendingLabel pending={sending} pendingLabel="Locking in…" label={changing ? "Update answer" : "Lock in"} />
+      </Button>
+    </>
+  );
+
+  const editor = (
     <Card
       ref={card}
       id={anchors.question(question.id)}
@@ -168,7 +214,8 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
         discussing ? "ring-1 ring-primary/45" : "hover:shadow-sm",
       )}
     >
-      <CardHeader className="gap-2 px-5 sm:px-6">
+      {/* grid-cols-1 (minmax(0,1fr)): a wide table or code block scrolls instead of stretching the card. */}
+      <CardHeader className="grid-cols-1 gap-2 px-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
           <Badge className="font-mono">{question.id}</Badge>
           <span className="text-xs text-muted-foreground">{kind}</span>
@@ -199,7 +246,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
         )}
       </CardHeader>
 
-      <CardContent className="grid gap-4 px-5 sm:px-6">
+      <CardContent className="grid grid-cols-1 gap-4 px-5 sm:px-6">
         {question.options.length > 0 && (
           <OptionList question={question} selected={selected} disabled={locked || sending} onToggle={toggle} />
         )}
@@ -239,41 +286,27 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
         )}
       </CardContent>
 
-      <CardFooter className="gap-2 px-5 sm:px-6">
-        <DiscussButton count={question.chat.length} unread={unread} active={discussing} onClick={onDiscuss} />
-        <div className="flex-1" />
-        {lock ? (
-          <LockedNote>{LOCK_COPY[lock]}</LockedNote>
-        ) : zone === "option" ? (
-          <KeyHints>
-            <HotkeyHint hotkey={HOTKEYS.previousAnswer} />
-            <HotkeyHint hotkey={HOTKEYS.nextAnswer} /> move
-            <HotkeyHint hotkey={HOTKEYS.submitAnswer} className="ml-1.5" /> lock in
-          </KeyHints>
-        ) : zone === "text" ? (
-          <KeyHints>
-            <HotkeyHint hotkey={HOTKEYS.submitAnswer} /> lock in
-            <HotkeyHint hotkey={HOTKEYS.newLine} className="ml-1.5" /> new line
-          </KeyHints>
-        ) : active && hasInput ? (
-          <KeyHints>
-            <HotkeyHint hotkey={HOTKEYS.lockIn} /> lock in
-          </KeyHints>
-        ) : (
-          <span className="hidden text-xs text-muted-foreground sm:inline">
-            {question.options.length > 0 ? "Pick or type" : "Type an answer"}
-          </span>
-        )}
-        {dirty && (
-          <Button variant="ghost" disabled={sending} onClick={discard}>
-            Discard changes
-          </Button>
-        )}
-        <Button disabled={!canSend} onClick={() => void send()}>
-          <PendingLabel pending={sending} pendingLabel="Locking in…" label={changing ? "Update answer" : "Lock in"} />
-        </Button>
-      </CardFooter>
     </Card>
+  );
+  if (!actionsSlot) return editor;
+
+  return (
+    <>
+      {editor}
+      {createPortal(
+        <>
+          {/* The question dissolves into the canvas behind the bar: fixed dots line up with the page's, masked in from the top. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-3 -top-24 -bottom-3 canvas [mask-image:linear-gradient(to_bottom,transparent,black_65%)]"
+          />
+          <div className="relative flex items-center gap-2 rounded-xl border bg-popover/95 px-4 py-3 shadow-lg backdrop-blur-md sm:px-5">
+            {actions}
+          </div>
+        </>,
+        actionsSlot,
+      )}
+    </>
   );
 }
 

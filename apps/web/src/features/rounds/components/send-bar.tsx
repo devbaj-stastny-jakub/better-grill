@@ -6,12 +6,10 @@ import { LockedNote } from "@/components/feedback/locked-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { useAction } from "@/hooks/use-action.ts";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
 import { cn } from "@/lib/utils.ts";
-import { liveQuestions } from "@/utils/question.ts";
 import { anchors } from "@/utils/anchors.ts";
-import { sendRound } from "../api/send-round.ts";
+import { useSendRound } from "../hooks/use-send-round.ts";
 import { ClaudeWorking } from "./claude-working.tsx";
 
 type Props = {
@@ -19,18 +17,19 @@ type Props = {
   lock: LockReason;
   /** Show a step, by its anchor id. */
   onJump: (anchor: string) => void;
+  /** The send card itself (a round's review); off leaves only the Claude-is-working card. */
+  showBar: boolean;
 };
 
-/** Answers wait in the bridge until the user sends them. Needs every question answered. */
-export function SendBar({ state, lock, onJump }: Props) {
-  const sendAction = useAction(sendRound);
-  const sending = sendAction.pending;
+/**
+ * Answers wait in the bridge until the user sends them; needs every question answered.
+ * Sits at the end of a round's review (the header's SendButton works from anywhere).
+ * Between Send and the next round it shows that Claude is working, on any step.
+ */
+export function SendBar({ state, lock, onJump, showBar }: Props) {
+  const { open, unsent, changes, ready, idle, action, send } = useSendRound(state, lock);
+  const sending = action.pending;
   const button = useRef<HTMLButtonElement>(null);
-
-  const questions = liveQuestions(Object.values(state.questions));
-  const open = questions.filter((q) => q.status === "open");
-  const unsent = questions.filter((q) => q.status === "answered" && !q.answer?.sent);
-  const ready = !state.ended && open.length === 0 && unsent.length > 0 && !lock && !sending;
 
   // Last question just locked in by keyboard and focus fell to the page: hand it to Send, so Enter sends.
   useEffect(() => {
@@ -38,15 +37,11 @@ export function SendBar({ state, lock, onJump }: Props) {
   }, [ready]);
 
   if (state.ended) return null;
-  if (open.length === 0 && unsent.length === 0) {
-    return state.awaitingSince ? <ClaudeWorking since={state.awaitingSince} lock={lock} /> : null;
-  }
-
-  const changes = unsent.filter((q) => q.round < (state.rounds.at(-1)?.number ?? 0)).length;
-  const send = () => void sendAction.run();
+  if (idle) return state.awaitingSince ? <ClaudeWorking since={state.awaitingSince} lock={lock} /> : null;
+  if (!showBar) return null;
 
   return (
-    <div className="sticky bottom-4 z-20 mb-12">
+    <div className="mb-12">
       <div
         className={cn(
           "flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-popover/95 px-4 py-3 shadow-lg backdrop-blur-md transition-[border-color,box-shadow] sm:px-5",
@@ -83,9 +78,7 @@ export function SendBar({ state, lock, onJump }: Props) {
             </>
           )}
           {lock && <LockedNote className="mt-1.5">{LOCK_COPY[lock]}</LockedNote>}
-          {sendAction.error && (
-            <ErrorNote className="mt-2" message={sendAction.error} onRetry={send} onDismiss={sendAction.clearError} />
-          )}
+          {action.error && <ErrorNote className="mt-2" message={action.error} onRetry={send} onDismiss={action.clearError} />}
         </div>
         <Button ref={button} size="lg" disabled={!ready} onClick={send} className="px-4">
           {!sending && <SendIcon data-icon="inline-start" />}

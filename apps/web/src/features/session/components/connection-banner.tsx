@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { SessionState } from "@better-grill/protocol";
 import { CheckIcon, InfoIcon } from "lucide-react";
+import { Coals } from "@/components/feedback/coals.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Spinner } from "@/components/ui/spinner.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { Connection } from "@/types/connection.ts";
 
-/** Sticky strip under the header for connection trouble, recovery and session end. */
+/** Floating strip under the header for connection trouble, recovery and session end. */
 export function ConnectionBanner({ state, connection }: { state: SessionState; connection: Connection }) {
   const [recovered, setRecovered] = useState(false);
   const previous = useRef(connection.status);
@@ -34,7 +34,7 @@ export function ConnectionBanner({ state, connection }: { state: SessionState; c
     const longGone = connection.attempts >= 6;
     return (
       <Strip tone="alert">
-        <Spinner className="size-3.5" />
+        <Coals className="text-sm" />
         <span>
           {longGone ? (
             <>
@@ -76,7 +76,7 @@ function Strip({ tone, children }: { tone: keyof typeof TONES; children: ReactNo
     <div
       role={tone === "alert" ? "alert" : "status"}
       className={cn(
-        "sticky top-14 z-20 flex items-center justify-center gap-2 border-b px-4 py-2 text-center text-xs font-medium backdrop-blur-md animate-in fade-in-0 slide-in-from-top-1",
+        "flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-center text-xs font-medium shadow-sm backdrop-blur-md animate-in fade-in-0 slide-in-from-top-1",
         TONES[tone],
       )}
     >

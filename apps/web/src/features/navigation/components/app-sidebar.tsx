@@ -1,28 +1,28 @@
+import { Fragment, useState } from "react";
 import type { Question, SessionState } from "@better-grill/protocol";
 import { ClipboardCheckIcon } from "lucide-react";
 import { BrandMark } from "@/components/brand.tsx";
 import { ResizeHandle } from "@/components/resize-handle.tsx";
-import { Progress } from "@/components/ui/progress.tsx";
+import { ThemeToggle } from "@/components/theme-toggle.tsx";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
+  SidebarSeparator,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
-import { cn } from "@/lib/utils.ts";
-import { roundLabel } from "@/utils/format.ts";
 import { liveQuestions, roundQuestions } from "@/utils/question.ts";
 import { anchors } from "@/utils/anchors.ts";
 import { useSidebarHotkey } from "../hooks/use-sidebar-hotkey.ts";
 import { SIDEBAR_WIDTH, useSidebarWidth } from "../hooks/use-sidebar-width.ts";
-import { QuestionNavItem } from "./question-nav-item.tsx";
+import { ProgressRing } from "./progress-ring.tsx";
+import { RoundNavGroup } from "./round-nav-group.tsx";
 
 type Props = {
   state: SessionState;
@@ -35,10 +35,12 @@ type Props = {
   onOpenChat: (id: string) => void;
 };
 
-/** Rounds and questions; a click shows that step (a round title shows its review). Drag the right edge to resize; collapses to a strip of numbered status chips. */
+/** Rounds and questions; a click shows that step. Settled rounds turn green and fold away. Drag the right edge to resize; collapses to a strip of numbered status chips. */
 export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat }: Props) {
   const { isMobile, setOpenMobile, state: sidebarState } = useSidebar();
   const [width, setWidth] = useSidebarWidth();
+  // Rounds the user folded or unfolded by hand; the rest follow RoundNavGroup's default.
+  const [toggled, setToggled] = useState<Record<number, boolean | undefined>>({});
   useSidebarHotkey();
 
   const jump = (anchor: string) => {
@@ -47,8 +49,8 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
   };
 
   return (
-    <Sidebar collapsible="icon" aria-label="Rounds and questions">
-      <SidebarHeader className="h-14 flex-row items-center border-b px-3 group-data-[collapsible=icon]:px-2">
+    <Sidebar variant="floating" collapsible="icon" aria-label="Rounds and questions">
+      <SidebarHeader className="h-12 flex-row items-center border-b px-2">
         <BrandMark />
         <span className="truncate text-sm font-semibold tracking-tight group-data-[collapsible=icon]:hidden">better grill</span>
       </SidebarHeader>
@@ -56,43 +58,22 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
       <SidebarContent>
         {state.rounds.length === 0 && <SidebarEmpty ended={state.ended} />}
 
-        {state.rounds.map((round) => {
-          const questions = roundQuestions(state, round.questionIds);
-          const live = liveQuestions(questions);
-          const locked = live.filter((q) => q.status === "answered").length;
-          return (
-            <SidebarGroup key={round.number}>
-              <SidebarGroupLabel
-                render={<button type="button" onClick={() => jump(anchors.round(round.number))} />}
-                className={cn(
-                  "gap-2 hover:bg-sidebar-accent group-data-[collapsible=icon]:pointer-events-none",
-                  current === anchors.round(round.number) && "bg-sidebar-accent text-sidebar-accent-foreground",
-                )}
-              >
-                <span className="font-semibold text-primary tabular-nums">{roundLabel(round.number)}</span>
-                <span className="min-w-0 flex-1 truncate text-left">{round.title ?? `Round ${round.number}`}</span>
-                <span className="tabular-nums">
-                  {locked}/{live.length}
-                </span>
-              </SidebarGroupLabel>
-              <p className="mb-1 hidden text-center text-[10px] font-semibold text-primary tabular-nums group-data-[collapsible=icon]:block">
-                {roundLabel(round.number)}
-              </p>
-              <SidebarMenu className="gap-0.5">
-                {questions.map((question) => (
-                  <QuestionNavItem
-                    key={question.id}
-                    question={question}
-                    active={current === anchors.question(question.id) || chatFor === question.id}
-                    unread={unread(question)}
-                    onJump={() => jump(anchors.question(question.id))}
-                    onOpenChat={() => onOpenChat(question.id)}
-                  />
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          );
-        })}
+        {state.rounds.map((round, i) => (
+          <Fragment key={round.number}>
+            {i > 0 && <SidebarSeparator />}
+            <RoundNavGroup
+              round={round}
+              questions={roundQuestions(state, round.questionIds)}
+              current={current}
+              chatFor={chatFor}
+              unread={unread}
+              onJump={jump}
+              onOpenChat={onOpenChat}
+              toggled={toggled[round.number]}
+              onToggle={(open) => setToggled((now) => ({ ...now, [round.number]: open }))}
+            />
+          </Fragment>
+        ))}
 
         {state.summary && (
           <SidebarGroup>
@@ -102,7 +83,7 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
                   tooltip="Summary"
                   isActive={current === anchors.summary}
                   onClick={() => jump(anchors.summary)}
-                  className="text-primary"
+                  className="text-primary hover:text-primary data-active:text-primary"
                 >
                   <ClipboardCheckIcon />
                   <span>Summary</span>
@@ -113,8 +94,11 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
         )}
       </SidebarContent>
 
-      <SidebarFooter className="group-data-[collapsible=icon]:hidden">
-        <SessionProgress state={state} />
+      <SidebarFooter className="border-t">
+        <SidebarMenu className="gap-0.5">
+          <SessionProgress state={state} onJump={jump} />
+          <ThemeToggle />
+        </SidebarMenu>
       </SidebarFooter>
       {!isMobile && sidebarState === "expanded" && (
         <ResizeHandle
@@ -126,31 +110,41 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
           initial={SIDEBAR_WIDTH.initial}
           onResize={setWidth}
           label="Resize panel"
+          // Sit in the gap right of the panel.
+          className="right-0"
         />
       )}
     </Sidebar>
   );
 }
 
-function SessionProgress({ state }: { state: SessionState }) {
+/** Settled count as a menu row: ring, label and count; just the ring when collapsed. Jumps to the next open question, or the summary. */
+function SessionProgress({ state, onJump }: { state: SessionState; onJump: (anchor: string) => void }) {
   const questions = liveQuestions(Object.values(state.questions));
   if (questions.length === 0) return null;
-  const answered = questions.filter((q) => q.status === "answered").length;
+  const settled = questions.filter((q) => q.status === "answered").length;
+  const done = settled === questions.length;
+  const next = questions.find((q) => q.status === "open");
+  const target = next ? anchors.question(next.id) : state.summary ? anchors.summary : null;
   return (
-    <div className="rounded-lg border bg-background p-3">
-      <div className="mb-2 flex items-center justify-between text-xs">
-        <span className="font-medium">Settled</span>
-        <span className="text-muted-foreground tabular-nums">
-          {answered}/{questions.length}
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        tooltip={`${settled}/${questions.length} settled`}
+        disabled={!target}
+        onClick={() => target && onJump(target)}
+        aria-label={`${settled} of ${questions.length} settled`}
+      >
+        {/* Orange while anything is open, green once all are settled. */}
+        <ProgressRing value={settled / questions.length} className={done ? "text-success" : "text-primary"} />
+        {/* One span, so it shrinks away with the sidebar like other rows' labels. */}
+        <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+          <span className="truncate">{done ? "All settled" : "Settled"}</span>
+          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+            {settled}/{questions.length}
+          </span>
         </span>
-      </div>
-      <Progress
-        value={(answered / questions.length) * 100}
-        aria-label="Questions settled"
-        // Orange while anything is open, green once all are settled.
-        className={cn(answered === questions.length && "**:data-[slot=progress-indicator]:bg-success")}
-      />
-    </div>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
 

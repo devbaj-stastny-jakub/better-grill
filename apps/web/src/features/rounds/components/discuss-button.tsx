@@ -1,14 +1,45 @@
+import type { RegisterableHotkey } from "@tanstack/react-hotkeys";
 import { MessageSquareIcon } from "lucide-react";
+import { HotkeyHint } from "@/components/hotkey-hint.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
 import { cn } from "@/lib/utils.ts";
 
-type Props = { count: number; unread: number; active: boolean; onClick: () => void; compact?: boolean };
+type Props = {
+  count: number;
+  unread: number;
+  active: boolean;
+  onClick: () => void;
+  compact?: boolean;
+  /** Shortcut shown in a tooltip, where one applies. */
+  hotkey?: RegisterableHotkey;
+};
 
-export function DiscussButton({ count, unread, active, onClick, compact = false }: Props) {
+export function DiscussButton({ hotkey, ...props }: Props) {
+  if (!hotkey) return <DiscussButtonBase {...props} />;
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<DiscussButtonBase {...props} />} />
+      <TooltipContent>
+        {props.active ? "Close discussion" : "Discuss"} <HotkeyHint hotkey={hotkey} />
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function DiscussButtonBase({
+  count,
+  unread,
+  active,
+  onClick,
+  compact = false,
+  ...rest
+}: Omit<Props, "hotkey"> & React.ComponentProps<"button">) {
   // Icon alone gets a square button so the bubble sits centred.
   const iconOnly = compact && count === 0;
   return (
     <Button
+      {...rest}
       variant={active ? "secondary" : "outline"}
       size={iconOnly ? "icon-sm" : compact ? "sm" : "default"}
       onClick={onClick}

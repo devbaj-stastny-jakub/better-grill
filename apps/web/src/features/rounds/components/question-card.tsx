@@ -11,6 +11,8 @@ type Props = {
   onDiscuss: () => void;
   /** An answer was locked in from this card. */
   onLockedIn: () => void;
+  /** Where the question's floating action bar goes: the end of the page. */
+  actionsSlot?: HTMLElement | null;
 };
 
 /** The question on its own page: dropped, or open for answering and changing the answer. */

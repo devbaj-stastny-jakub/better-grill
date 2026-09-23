@@ -83,7 +83,8 @@ export function ResizeHandle({ side, cssVar, width, min, max, initial, onResize,
         if (event.key === shrink) onResize(clamp(width - step));
       }}
       className={cn(
-        "group absolute inset-y-0 z-20 w-3 cursor-col-resize touch-none outline-none",
+        // Named group: the sidebar root is a plain `group`, so bare group-hover would fire on any sidebar hover.
+        "group/handle absolute inset-y-0 z-20 w-3 cursor-col-resize touch-none outline-none",
         side === "left" ? "-right-1.5" : "-left-1.5",
         className,
       )}
@@ -91,13 +92,13 @@ export function ResizeHandle({ side, cssVar, width, min, max, initial, onResize,
       <span
         className={cn(
           "absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors",
-          dragging ? "bg-primary" : "bg-transparent group-hover:bg-primary/50 group-focus-visible:bg-primary/50",
+          dragging ? "bg-primary" : "bg-transparent group-hover/handle:bg-primary/50 group-focus-visible/handle:bg-primary/50",
         )}
       />
       <span
         className={cn(
-          "absolute top-1/2 left-1/2 h-8 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-background opacity-0 transition-[opacity,background-color,border-color] group-hover:opacity-100 group-focus-visible:opacity-100",
-          dragging ? "border-primary bg-primary opacity-100" : "group-hover:border-primary",
+          "absolute top-1/2 left-1/2 h-8 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-background opacity-0 transition-[opacity,background-color,border-color] group-hover/handle:opacity-100 group-focus-visible/handle:opacity-100",
+          dragging ? "border-primary bg-primary opacity-100" : "group-hover/handle:border-primary",
         )}
       />
     </div>
