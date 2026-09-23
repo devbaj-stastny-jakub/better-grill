@@ -1,30 +1,18 @@
-# better-grill
+<p align="center">
+  <img src="https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/hero.png" alt="better grill: let Claude grill your plan. A browser UI with rounds of questions, Claude's pick on each, and a discussion thread per question.">
+</p>
 
-[![npm](https://img.shields.io/npm/v/better-grill)](https://www.npmjs.com/package/better-grill)
-[![license](https://img.shields.io/npm/l/better-grill)](LICENSE)
-[![node](https://img.shields.io/node/v/better-grill)](https://nodejs.org)
+<p align="center">
+  <a href="https://www.npmjs.com/package/better-grill"><img src="https://img.shields.io/npm/v/better-grill?color=f97316" alt="npm"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/better-grill?color=f97316" alt="license"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/node/v/better-grill?color=f97316" alt="node"></a>
+</p>
 
-Grill sessions for Claude Code, in your browser instead of the terminal.
+<p align="center"><b>Claude interviews you about your plan until nothing is left unsaid.<br>You answer in a real UI, not a wall of terminal text.</b></p>
 
-![A grill round in better-grill: one question locked in, the next with Claude's recommended option picked](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/round.png)
+---
 
-A grill session is Claude interviewing you about a plan until nothing is left unsaid. It maps the decisions as a tree, asks every question it can answer right now in one round with a recommended answer each, and keeps going until every branch is settled. The method comes from Matt Pocock's [`grilling`](https://github.com/mattpocock/skills) skill; better-grill gives it a proper UI.
-
-Why a browser:
-
-- **Options side by side**, each with a description and Claude's pick marked, instead of a wall of terminal text.
-- **A discussion thread per question.** Push back on one question without derailing the rest; Claude can reword, resolve, drop or add questions from the talk.
-- **Answer at your own pace.** Lock in questions in any order, change your mind, then send the whole round at once.
-- **Runs on your Claude Code session.** Uses your existing subscription. No API key, no hosted service.
-
-## Requirements
-
-- [Claude Code](https://code.claude.com)
-- [Node.js](https://nodejs.org) 20 or newer on your `PATH`
-- The `grilling` skill from [mattpocock/skills](https://github.com/mattpocock/skills). better-grill brings the UI; `grilling` brings the method.
-- For the docs variant, also `domain-modeling` from the same repo.
-
-## Install
+## Quick start
 
 In Claude Code:
 
@@ -33,42 +21,52 @@ In Claude Code:
 /plugin install better-grill@better-grill
 ```
 
-## Usage
-
-In any Claude Code session:
+Then grill anything:
 
 ```
-/better-grill:better-grill <what you want grilled>
+/better-grill:better-grill a CLI that syncs my dotfiles across machines
 ```
 
-Or, to also keep a glossary (`CONTEXT.md`) and ADRs as decisions settle, like `grill-with-docs`:
+Your browser opens on the session, and Claude's first round of questions lands there.
+
+You'll need [Node.js](https://nodejs.org) 20+ and the [`grilling`](https://github.com/mattpocock/skills) skill by Matt Pocock: better-grill brings the UI, `grilling` brings the method.
+
+## What a grill feels like
+
+![A round in better-grill: a long question with a comparison table, Claude's recommended option picked, and the Lock in bar at the bottom](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/round.png)
+
+- 🔥 **Rounds of sharp questions.** Claude maps your plan as a tree of decisions and asks everything it can answer right now, one question at a time, with context, trade-offs and tables where they help.
+- 🎯 **Claude's pick on every question.** Take the recommendation, pick another option, write your own answer, or add a note to your pick.
+- 💬 **Push back without derailing.** Every question has its own discussion thread. Argue it out, and Claude rewords, resolves, drops or adds questions from what you agree on.
+- 🔒 **Lock in, then send.** Answer in any order and change your mind freely. When the round is settled, send it all at once and the next round builds on it.
+- ✅ **A summary at the end.** When nothing is open, Claude posts every decision in one place. Confirm it, or say what's wrong and the grilling goes on.
+- ⌨️ **Keyboard first.** <kbd>↑</kbd> <kbd>↓</kbd> to walk options, <kbd>Enter</kbd> to lock in, <kbd>D</kbd> to discuss, <kbd>[</kbd> to fold the sidebar.
+
+![A discussion thread open next to the question it is about](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/discussion.png)
+
+## Grill with docs
+
+Want the decisions written down as you go? The docs variant also keeps a glossary (`CONTEXT.md`) and ADRs up to date as answers settle, like `grill-with-docs`:
 
 ```
 /better-grill:better-grill-docs <what you want grilled>
 ```
 
-1. Your browser opens on the session. The terminal stays quiet; everything happens in the UI.
-2. Claude posts a round of questions. For each one, pick an option, write your own answer, or both, then **Lock in**.
-3. Not sure about a question? Hit **Discuss** and talk it through. Claude answers in the thread and updates the question when you agree on something.
-4. When every question is locked in, **Send to Claude**. The next round builds on your answers.
-5. When nothing is left open, Claude posts a summary of every decision. Confirm it, or say what's wrong and the grilling continues.
-
-![A discussion thread next to the question it is about](https://raw.githubusercontent.com/devbaj-stastny-jakub/better-grill/main/.github/assets/discussion.png)
-
-Several Claude sessions can grill at the same time; each gets its own browser tab.
+It needs the `domain-modeling` skill from the same [mattpocock/skills](https://github.com/mattpocock/skills) repo.
 
 ## How it works
 
-- Claude Code has no port the browser could call, so better-grill starts a small local **bridge** server for each session.
-- Claude talks to the bridge with a CLI from its Bash tool: it posts rounds, then waits in the background until you send a round or write in a discussion.
-- The bridge never calls Claude or any API. It holds the session state and hands your answers back.
-- It listens on `127.0.0.1` only, rejects requests from other websites, and shuts down on its own after 30 idle minutes.
+- **Runs on your Claude Code session.** It uses your existing subscription: no API key, no hosted service. The UI and its bridge run locally.
+- **A small local bridge per session.** Claude Code has no port a browser could call, so better-grill starts one. Claude posts rounds to it from its Bash tool and waits in the background until you send a round or write in a discussion.
+- **The bridge never calls Claude or any API.** It holds the session state and hands your answers back.
+- **Locked down by default.** It listens on `127.0.0.1` only, rejects requests from other websites, and shuts down on its own after 30 idle minutes.
+- **Several grills at once.** Each Claude session gets its own bridge and browser tab.
 
-Details, security model, CLI reference and known limits: [ARCHITECTURE.md](ARCHITECTURE.md).
+Security model, CLI reference and known limits: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Contributing
 
-Issues and pull requests welcome. Dev setup: [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and pull requests welcome. Dev setup, demo and screenshots: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

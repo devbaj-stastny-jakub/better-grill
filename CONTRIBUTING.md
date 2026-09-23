@@ -66,8 +66,10 @@ Features never import from each other; only `app/` combines them. Theme tokens (
 The README images in `.github/assets/` come from the demo rounds, captured with Playwright in dark mode:
 
 ```sh
-pnpm screenshots  # builds, starts a bridge, posts demo rounds, saves round.png and discussion.png
+pnpm screenshots  # builds, starts a bridge, posts demo rounds, saves round.png, discussion.png and hero.png
 ```
+
+The hero is `apps/bridge/scripts/hero.html` (pitch, brand mark, the app's dark tokens) with the fresh discussion shot framed in a window; edit its copy there.
 
 Rerun it after visible UI changes. First time on a machine, Playwright may ask for `pnpm --filter @better-grill/bridge exec playwright install chromium`.
 

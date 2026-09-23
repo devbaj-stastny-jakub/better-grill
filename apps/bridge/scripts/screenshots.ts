@@ -1,12 +1,13 @@
 /*
  * README screenshots: starts a bridge from the build in skills/better-grill-base/dist,
- * posts the demo rounds and photographs the UI in dark mode into .github/assets.
+ * posts the demo rounds and photographs the UI in dark mode into .github/assets,
+ * then frames the discussion shot in the hero (scripts/hero.html).
  * Run `pnpm screenshots` from the repo root (it builds first).
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium, type Page } from "playwright";
 import type { WaitResponse } from "@better-grill/protocol";
 import { call, parseHandle } from "../src/client.ts";
@@ -72,7 +73,16 @@ try {
   await settle(page);
   await page.screenshot({ path: join(outDir, "discussion.png") });
 
-  console.log(`Saved round.png and discussion.png to ${outDir}`);
+  // Hero: the discussion shot in a floating window next to the pitch.
+  const hero = await browser.newPage({ viewport: { width: 1280, height: 640 }, deviceScaleFactor: 2 });
+  const heroUrl = new URL("./hero.html", import.meta.url);
+  heroUrl.searchParams.set("shot", pathToFileURL(join(outDir, "discussion.png")).href);
+  await hero.goto(heroUrl.href);
+  await hero.waitForSelector("body[data-ready]", { state: "attached" });
+  await hero.evaluate("document.fonts.ready");
+  await hero.screenshot({ path: join(outDir, "hero.png") });
+
+  console.log(`Saved round.png, discussion.png and hero.png to ${outDir}`);
 } finally {
   await browser.close();
   grill("stop", "-s", session);

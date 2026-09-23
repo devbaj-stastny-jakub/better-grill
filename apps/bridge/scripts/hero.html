@@ -1,0 +1,211 @@
+<!doctype html>
+<!--
+  README hero, rendered to .github/assets/hero.png by `pnpm screenshots` (scripts/screenshots.ts).
+  The app screenshot comes in as ?shot=<file url>. Colours are the web app's dark tokens.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>better grill hero</title>
+    <style>
+      @font-face {
+        font-family: "Geist";
+        src: url("../../web/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2");
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: "Geist Mono";
+        src: url("../../web/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2") format("woff2");
+        font-weight: 100 900;
+      }
+      :root {
+        --background: oklch(0.194 0.005 248);
+        --foreground: oklch(0.97 0.002 265);
+        --card: oklch(0.232 0.01 277);
+        --muted: oklch(0.279 0.013 279);
+        --muted-foreground: oklch(0.62 0.009 290);
+        --primary: oklch(0.69 0.19 45);
+        --border: oklch(0.298 0.013 273);
+        --canvas-dot: oklch(0.27 0.008 265);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 1280px;
+        height: 640px;
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        font-family: "Geist", system-ui, sans-serif;
+        color: var(--foreground);
+        background-color: var(--background);
+        background-image: radial-gradient(var(--canvas-dot) 1px, transparent 1.5px);
+        background-size: 20px 20px;
+        -webkit-font-smoothing: antialiased;
+      }
+      /* Heat: a warm glow behind the app, fading into the dots. */
+      .glow {
+        position: absolute;
+        width: 900px;
+        height: 640px;
+        right: -120px;
+        top: 20px;
+        background: radial-gradient(closest-side, oklch(0.69 0.19 45 / 0.34), oklch(0.69 0.19 45 / 0.08) 60%, transparent);
+        filter: blur(20px);
+      }
+      .copy {
+        position: absolute;
+        left: 72px;
+        top: 0;
+        bottom: 0;
+        width: 470px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 26px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .mark {
+        display: flex;
+        width: 44px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 8px 24px -6px oklch(0.69 0.19 45 / 0.6);
+      }
+      .mark svg {
+        width: 24px;
+        height: 24px;
+      }
+      h1 {
+        font-size: 54px;
+        line-height: 1.02;
+        font-weight: 650;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+      h1 em {
+        font-style: normal;
+        color: var(--primary);
+      }
+      .lede {
+        font-size: 19px;
+        line-height: 1.5;
+        color: var(--muted-foreground);
+        text-wrap: pretty;
+      }
+      .install {
+        display: inline-flex;
+        align-self: flex-start;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: oklch(0.232 0.01 277 / 0.85);
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 15px;
+      }
+      .install .prompt {
+        color: var(--primary);
+      }
+      /* The whole app, in a floating window tipped back a little. */
+      .stage {
+        position: absolute;
+        left: 560px;
+        top: 64px;
+        perspective: 2200px;
+      }
+      .window {
+        width: 680px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--card);
+        overflow: hidden;
+        transform: rotateY(-9deg) rotateX(3deg);
+        transform-origin: left center;
+        box-shadow:
+          0 40px 90px -20px oklch(0 0 0 / 0.7),
+          0 0 0 1px oklch(1 0 0 / 0.03);
+      }
+      .bar {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        height: 34px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--muted);
+      }
+      .bar span {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: oklch(0.4 0.01 275);
+      }
+      .bar p {
+        margin-left: 10px;
+        font-family: "Geist Mono", ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--muted-foreground);
+      }
+      .window img {
+        display: block;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+
+    <div class="copy">
+      <div class="brand">
+        <span class="mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11h18" />
+            <path d="M4 11a8 6 0 0 0 16 0" />
+            <path d="M8 16.2 6.5 21" />
+            <path d="M16 16.2 17.5 21" />
+            <path d="M8 8 C9.1 7.1667 9.1 6.3333 8 5.5 C6.9 4.6667 6.9 3.8333 8 3" />
+            <path d="M12 8 C12.22 7.1 12.22 6.2 12 5.3 C11.78 4.4 11.78 3.5 12 2.6" />
+            <path d="M16 8 C14.9 7.1667 14.9 6.3333 16 5.5 C17.1 4.6667 17.1 3.8333 16 3" />
+          </svg>
+        </span>
+        better grill
+      </div>
+      <h1>Let Claude <em>grill</em> your plan.</h1>
+      <p class="lede">
+        Round after round of sharp questions, each with Claude's pick. Answer, push back in a thread, lock in. Right in your browser,
+        on your Claude Code session.
+      </p>
+      <div class="install"><span class="prompt">&gt;</span> /plugin install better-grill@better-grill</div>
+    </div>
+
+    <div class="stage">
+      <div class="window">
+        <div class="bar"><span></span><span></span><span></span><p>localhost · Launch plan</p></div>
+        <img id="shot" alt="" />
+      </div>
+    </div>
+
+    <script>
+      const img = document.getElementById("shot");
+      img.src = new URLSearchParams(location.search).get("shot");
+      img.onload = () => (document.body.dataset.ready = "");
+    </script>
+  </body>
+</html>
