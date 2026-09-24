@@ -33,6 +33,7 @@
     "skills/better-grill/SKILL.md",
     "skills/better-grill-docs/SKILL.md",
     "skills/better-grill-base/SKILL.md",
+    "skills/better-grill-base/visualize.md",
     "skills/better-grill-base/dist"
   ],
   "scripts": {

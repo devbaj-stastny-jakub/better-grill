@@ -12,6 +12,7 @@ import type {
   RoundPosted,
   SessionMode,
   SessionState,
+  VisualizationPage,
 } from "@better-grill/protocol";
 
 export class HttpError extends Error {
@@ -44,6 +45,8 @@ export function createSession(title: string, mode: SessionMode, imagePaths: (ids
     ended: false,
   };
   let events: GrillEvent[] = [];
+  /** Visualization pages by question id. Kept out of `state`, which goes to the browser on every change. */
+  const pages = new Map<string, string>();
   /** Questions whose answer Claude has received at least once. */
   const delivered = new Set<string>();
   let questionCount = 0;
@@ -244,6 +247,31 @@ export function createSession(title: string, mode: SessionMode, imagePaths: (ids
       changed();
     },
 
+    /** A visualization page for a question, asked for or not. Replaces the one before. */
+    visualize(id: string, html: string) {
+      assertLive();
+      const question = findLive(id);
+      pages.set(id, html);
+      question.visualization = {
+        status: "ready",
+        note: question.visualization?.note,
+        requestedAt: question.visualization?.requestedAt ?? Date.now(),
+        version: (question.visualization?.version ?? 0) + 1,
+        readyAt: Date.now(),
+      };
+      changed();
+    },
+
+    /** Nothing useful to visualize. Any earlier page stays. */
+    failVisualization(id: string, reason: string) {
+      assertLive();
+      const visualization = findLive(id).visualization;
+      if (visualization?.status !== "pending") throw new HttpError(409, `Nobody asked to visualize ${id}`);
+      visualization.status = "failed";
+      visualization.reason = reason;
+      changed();
+    },
+
     drop(id: string, reason: string) {
       const question = find(id);
       question.status = "dropped";
@@ -310,6 +338,30 @@ export function createSession(title: string, mode: SessionMode, imagePaths: (ids
       addMessage(question, "user", text, images);
       events.push({ type: "chat", questionId: id, title: question.title, text, images: paths.length > 0 ? paths : undefined });
       changed();
+    },
+
+    /** The Visualize button. The page from an earlier request stays up until the new one arrives. */
+    requestVisualization(id: string, note?: string) {
+      assertLive();
+      const question = findLive(id);
+      const previous = question.visualization;
+      if (previous?.status === "pending") throw new HttpError(409, `Claude is already visualizing ${id}`);
+      question.visualization = {
+        status: "pending",
+        note: note || undefined,
+        requestedAt: Date.now(),
+        version: previous?.version ?? 0,
+        readyAt: previous?.readyAt,
+      };
+      events.push({ type: "visualize", questionId: id, title: question.title, note: note || undefined });
+      changed();
+    },
+
+    visualizationPage(id: string): VisualizationPage {
+      const html = pages.get(id);
+      const version = find(id).visualization?.version ?? 0;
+      if (html === undefined) throw new HttpError(404, `${id} has no visualization`);
+      return { version, html };
     },
 
     respondSummary(confirmed: boolean, text?: string) {

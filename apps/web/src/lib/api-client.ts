@@ -3,15 +3,19 @@ import { REQUEST_TIMEOUT_MS } from "@/config/constants.ts";
 export class ActionError extends Error {}
 
 /** POST JSON to the bridge and return its JSON answer. Throws ActionError with copy that can go straight into the UI. */
-export async function post<T = unknown>(path: string, body: unknown): Promise<T> {
+export function post<T = unknown>(path: string, body: unknown): Promise<T> {
+  return request<T>(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+}
+
+/** GET JSON from the bridge. Throws ActionError like `post`. */
+export function get<T = unknown>(path: string): Promise<T> {
+  return request<T>(path, { method: "GET" });
+}
+
+async function request<T>(path: string, init: RequestInit): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(path, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+    response = await fetch(path, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
       throw new ActionError(`The bridge did not answer within ${REQUEST_TIMEOUT_MS / 1000} seconds. Try again.`);

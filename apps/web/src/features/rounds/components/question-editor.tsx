@@ -1,5 +1,4 @@
-import { useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { type ReactNode, useRef, useState } from "react";
 import type { Question } from "@better-grill/protocol";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { CircleCheckIcon, SparklesIcon } from "lucide-react";
@@ -8,6 +7,7 @@ import { LockedNote } from "@/components/feedback/locked-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
 import { HotkeyHint } from "@/components/hotkey-hint.tsx";
 import { DropOverlay } from "@/components/drop-overlay.tsx";
+import { FloatingActions } from "@/components/floating-actions.tsx";
 import { type ImageDraft, ImageTextEditor, type ImageTextEditorHandle } from "@/components/image-editor/image-text-editor.tsx";
 import { Markdown } from "@/components/markdown.tsx";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
@@ -38,12 +38,26 @@ type Props = {
   onLockedIn: () => void;
   /** Where the floating action bar goes: a slot at the end of the page, stuck to the bottom of the screen. */
   actionsSlot?: HTMLElement | null;
+  /** Extra controls next to Discuss in the action bar (the switch to the visualization). */
+  extraActions?: ReactNode;
+  /** Kept mounted behind another view, so the draft survives: its shortcuts stay off. */
+  hidden?: boolean;
 };
 
 type FocusZone = "option" | "text" | null;
 
 /** A question on its own page, open or answered: pick options, write text, lock in (or update the answer). */
-export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, onLockedIn, actionsSlot }: Props) {
+export function QuestionEditor({
+  question,
+  lock,
+  discussing,
+  unread,
+  onDiscuss,
+  onLockedIn,
+  actionsSlot,
+  extraActions,
+  hidden = false,
+}: Props) {
   const locked = lock !== null;
   const [selected, setSelected] = useState<string[]>(question.answer?.optionIds ?? []);
   const [draft, setDraft] = useState<ImageDraft>(() => savedDraft(question));
@@ -117,7 +131,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
       if ((event.target as HTMLElement).closest("input, textarea, [contenteditable=true]")) return;
       void send();
     },
-    { enabled: active && canSend, conflictBehavior: "allow" },
+    { enabled: active && canSend && !hidden, conflictBehavior: "allow" },
   );
   const activate = () => setActiveQuestion(question.id);
 
@@ -160,6 +174,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
         onClick={onDiscuss}
         hotkey={HOTKEYS.discuss}
       />
+      {extraActions}
       <div className="flex-1" />
       {lock ? (
         <LockedNote>{LOCK_COPY[lock]}</LockedNote>
@@ -300,19 +315,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
   return (
     <>
       {editor}
-      {createPortal(
-        <>
-          {/* The question dissolves into the canvas behind the bar: fixed dots line up with the page's, masked in from the top. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-x-3 -top-24 -bottom-3 canvas [mask-image:linear-gradient(to_bottom,transparent,black_65%)]"
-          />
-          <div className="relative flex items-center gap-2 rounded-xl border bg-popover/95 px-4 py-3 shadow-lg backdrop-blur-md sm:px-5">
-            {actions}
-          </div>
-        </>,
-        actionsSlot,
-      )}
+      <FloatingActions slot={actionsSlot}>{actions}</FloatingActions>
     </>
   );
 }

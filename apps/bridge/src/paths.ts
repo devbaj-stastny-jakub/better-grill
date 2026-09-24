@@ -11,6 +11,10 @@ const bundled = !import.meta.url.endsWith(".ts");
 
 export const serverEntry = fileURLToPath(new URL(bundled ? "./server.js" : "./server.ts", import.meta.url));
 export const webDist = fileURLToPath(new URL(bundled ? "./web/" : "../../web/dist/", import.meta.url));
+/** How to build a visualization, printed by `grill visualize --brief`. Ships next to dist/ in the skill folder. */
+export const visualizeGuide = fileURLToPath(
+  new URL(bundled ? "../visualize.md" : "../../../skills/better-grill-base/visualize.md", import.meta.url),
+);
 
 /**
  * Images the user pastes into the UI, one folder per bridge. A fixed place under the

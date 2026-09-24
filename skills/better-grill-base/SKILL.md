@@ -98,7 +98,7 @@ Output:
 }
 ```
 
-`open` lists questions still unanswered after these events. A wait that returns only `chat` events means the round is still in progress: handle the chat, then wait again.
+`open` lists questions still unanswered after these events. A wait that returns only `chat` or `visualize` events means the round is still in progress: handle them, then wait again.
 
 `images` (on `answer` and `chat`, only when present) lists absolute paths of images the user pasted or dropped in: screenshots, sketches, diagrams. The user places each image inside their text, where it shows up as `[Image N]`: `[Image 1]` is `images[0]`, `[Image 2]` is `images[1]`, and so on. Read every image with the Read tool before you act on the event; they are part of what the user said, and the text around each marker tells you what it is about. When you reply about one, name it the same way ("in Image 2, …"). The files are deleted when the bridge stops.
 
@@ -116,6 +116,11 @@ Output:
   ```
 
   Keep replies conversational and short. Then act on what the talk settled (next section). Never tell the user to go lock in an answer the two of you already agreed on.
+- **visualize** (`{ "type": "visualize", "questionId": "Q3", "title": "…", "note": "focus on the failure case" }`): the user pressed Visualize and wants the question visualized as an interactive page, shown in the UI. That takes a while, so hand it to a background sub-agent (Agent tool, `run_in_background: true`) and carry on with the grill. Give it this prompt, with the handle and id filled in:
+
+  > Run `node "${CLAUDE_SKILL_DIR}/dist/cli.js" visualize -s SESSION Q3 --brief`. It prints how to build the visualization, the question and the command that posts the page. Follow it exactly, post the page, and reply with one line.
+
+  Without sub-agents, run that brief yourself once the other events are handled. Don't reply in the thread about it: the UI shows the progress and the result. `note` is what the user wants to see; the brief includes it.
 - **summary_confirmed / summary_rejected / ended**: see step 6.
 
 ## 5b. Shape questions from the discussion

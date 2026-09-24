@@ -6,9 +6,9 @@ import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import type { Health, RoundPosted, WaitResponse } from "@better-grill/protocol";
+import type { Health, RoundPosted, SessionState, WaitResponse } from "@better-grill/protocol";
 import { type Bridge, BridgeError, call, formatHandle, parseHandle } from "./client.ts";
-import { serverEntry, webDist } from "./paths.ts";
+import { serverEntry, visualizeGuide, webDist } from "./paths.ts";
 
 const USAGE = `grill — drive a better-grill UI session from Claude Code
 
@@ -22,6 +22,9 @@ const USAGE = `grill — drive a better-grill UI session from Claude Code
   grill resolve -s SESSION Q3 < resolution.json    answer a question for the user: {"options":[1],"text":"…"}
   grill edit   -s SESSION Q3 < patch.json          rewrite a question (partial fields)
   grill drop   -s SESSION Q3 < reason.txt          remove a question that no longer matters
+  grill visualize -s SESSION Q3 --brief            print how to build Q3's visualization, and the question it's for
+  grill visualize -s SESSION Q3 < page.html        post Q3's visualization (an HTML fragment)
+  grill visualize -s SESSION Q3 --fail < reason.txt  say why there is nothing useful to visualize
   grill summary -s SESSION  < summary.md           show final summary for confirmation
   grill state  -s SESSION                          print full session state (debugging)
   grill stop   -s SESSION                          shut the bridge down
@@ -38,6 +41,8 @@ const { values, positionals } = parseArgs({
     port: { type: "string" },
     title: { type: "string" },
     docs: { type: "boolean", default: false },
+    brief: { type: "boolean", default: false },
+    fail: { type: "boolean", default: false },
     "no-open": { type: "boolean", default: false },
     help: { type: "boolean", short: "h", default: false },
   },
@@ -96,6 +101,54 @@ function openBrowser(url: string) {
   const [opener, ...args] =
     process.platform === "darwin" ? ["open"] : process.platform === "win32" ? ["cmd", "/c", "start", ""] : ["xdg-open"];
   spawn(opener!, [...args, url], { detached: true, stdio: "ignore" }).unref();
+}
+
+/** The guide plus the question, its discussion and the user's note: all an agent building the visualization needs. */
+async function brief() {
+  const target = bridge();
+  const id = questionId();
+  const state = await call<SessionState>(target, "GET", "/api/state");
+  const question = state.questions[id] ?? fail(`Unknown question ${id}.`, 1);
+  const recommended = question.options.findIndex((o) => o.id === question.recommended);
+  const self = `node "${process.argv[1]}" visualize -s ${values.session} ${id}`;
+  const input = {
+    title: question.title,
+    body: question.body,
+    options: question.options.map(({ label, description }) => ({ label, description })),
+    recommended: recommended === -1 ? undefined : recommended,
+    recommendation: question.recommendation,
+    multiSelect: question.multiSelect,
+    answer: question.answer && {
+      choices: question.options.filter((o) => question.answer!.optionIds.includes(o.id)).map((o) => o.label),
+      text: question.answer.text,
+    },
+  };
+  const discussion = question.chat.map((m) => `**${m.role}:** ${m.text}`).join("\n\n");
+  console.log(
+    [
+      readFileSync(visualizeGuide, "utf8").trim(),
+      "---",
+      `# This question: ${id}`,
+      "```json\n" + JSON.stringify(input, null, 2) + "\n```",
+      `## The user's note\n\n${question.visualization?.note ?? "None. Show what helps most."}`,
+      discussion && `## Discussion so far\n\n${discussion}`,
+      `## Commands\n\nPost the page (the heredoc delimiter must not appear in the page):\n\n\`\`\`bash\n${self} <<'GRILL_PAGE'\n…your HTML fragment…\nGRILL_PAGE\n\`\`\`\n\nOr, with nothing useful to visualize:\n\n\`\`\`bash\n${self} --fail <<'EOF'\nWhy, in one sentence.\nEOF\n\`\`\``,
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+  );
+}
+
+async function visualize() {
+  if (values.brief) return brief();
+  const id = questionId();
+  if (values.fail) {
+    await call(bridge(), "POST", `/api/questions/${id}/visualization/fail`, { text: stdin() });
+    console.log(`Told the user why ${id} has no visualization.`);
+    return;
+  }
+  await call(bridge(), "POST", `/api/questions/${id}/visualization`, { html: stdin() });
+  console.log(`Posted the visualization of ${id}.`);
 }
 
 async function start() {
@@ -167,6 +220,8 @@ async function main() {
       await call(bridge(), "POST", `/api/questions/${questionId()}/drop`, { text: stdin() });
       console.log(`Dropped ${arg}.`);
       return;
+    case "visualize":
+      return visualize();
     case "summary":
       await call(bridge(), "POST", "/api/summary", { markdown: stdin() });
       console.log("Summary posted.");

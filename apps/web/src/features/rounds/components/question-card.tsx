@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Question } from "@better-grill/protocol";
 import type { LockReason } from "@/lib/lock.ts";
 import { DroppedQuestion } from "./dropped-question.tsx";
@@ -13,6 +14,10 @@ type Props = {
   onLockedIn: () => void;
   /** Where the question's floating action bar goes: the end of the page. */
   actionsSlot?: HTMLElement | null;
+  /** Extra controls next to Discuss in the action bar. */
+  extraActions?: ReactNode;
+  /** Kept mounted behind another view: its shortcuts stay off. */
+  hidden?: boolean;
 };
 
 /** The question on its own page: dropped, or open for answering and changing the answer. */

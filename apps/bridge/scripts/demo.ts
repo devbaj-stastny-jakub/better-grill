@@ -3,9 +3,10 @@
  * and walks to a summary. Start the bridge first (`pnpm dev`), then `pnpm demo`.
  * Against another bridge: `pnpm demo <session handle from grill start>`.
  */
-import type { WaitResponse } from "@better-grill/protocol";
+import type { SessionState, WaitResponse } from "@better-grill/protocol";
 import { call, parseHandle } from "../src/client.ts";
 import { rounds } from "./demo-rounds.ts";
+import { demoVisualization } from "./demo-visual.ts";
 
 const handle = process.argv[2] ?? "4777-dev";
 const bridge = parseHandle(handle) ?? (console.error(`Not a session handle: ${handle}`), process.exit(2));
@@ -52,6 +53,21 @@ for (;;) {
           : `(demo) You said: _${event.text || "(no text)"}_${event.images ? ` and sent ${event.images.length} image(s): ${event.images.join(", ")}` : ""}\n\nFair point. The trade-off on **${event.title}** is mostly about how fast you want to learn versus how much you want to support.\n\nStart a message with "ok" to settle it.`,
       });
       if (settles) await call(bridge, "POST", `/api/questions/${event.questionId}/resolve`, { text: event.text });
+    }
+    if (event.type === "visualize") {
+      // A visualization takes a while; the grill keeps going meanwhile. A note with "fail" tries the other ending.
+      const { questionId, note } = event;
+      setTimeout(async () => {
+        if (note && /\bfail\b/i.test(note)) {
+          await call(bridge, "POST", `/api/questions/${questionId}/visualization/fail`, {
+            text: "(demo) Nothing useful to visualize: the question is about wording, not a mechanism.",
+          });
+          return;
+        }
+        const state = await call<SessionState>(bridge, "GET", "/api/state");
+        const question = state.questions[questionId];
+        if (question) await call(bridge, "POST", `/api/questions/${questionId}/visualization`, { html: demoVisualization(question, note) });
+      }, 4000);
     }
     if (event.type === "summary_confirmed" || event.type === "ended") {
       console.log("done");

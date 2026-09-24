@@ -21,6 +21,8 @@ export const HOTKEYS = {
   closeChat: "Escape",
   /** Open or close the discussion of the question on screen. */
   discuss: "D",
+  /** Switch the question on screen between answering it and its visualization. */
+  visualize: "V",
   /** Collapse or expand the sidebar. ⌘B also works (shadcn sidebar built-in). */
   toggleSidebar: "[",
 } as const satisfies Record<string, RegisterableHotkey>;

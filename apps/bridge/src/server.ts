@@ -19,6 +19,9 @@ import {
   SummaryInputSchema,
   SummaryResponseSchema,
   TextSchema,
+  MAX_VISUALIZATION_CHARS,
+  VisualizationInputSchema,
+  VisualizeRequestSchema,
   type WaitResponse,
 } from "@better-grill/protocol";
 import { createImageStore } from "./images.ts";
@@ -190,6 +193,23 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   ],
   [
     "POST",
+    /^\/api\/questions\/(Q\d+)\/visualization$/,
+    guarded(async (req, res, [id]) => {
+      // JSON escaping of quotes and newlines makes the body longer than the page.
+      session.visualize(id!, (await body(req, VisualizationInputSchema, MAX_VISUALIZATION_CHARS * 2)).html);
+      json(res, 200, ok);
+    }),
+  ],
+  [
+    "POST",
+    /^\/api\/questions\/(Q\d+)\/visualization\/fail$/,
+    guarded(async (req, res, [id]) => {
+      session.failVisualization(id!, (await body(req, TextSchema)).text);
+      json(res, 200, ok);
+    }),
+  ],
+  [
+    "POST",
     /^\/api\/questions\/(Q\d+)\/drop$/,
     guarded(async (req, res, [id]) => {
       session.drop(id!, (await body(req, TextSchema)).text);
@@ -241,6 +261,15 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
       json(res, 200, ok);
     },
   ],
+  [
+    "POST",
+    /^\/api\/questions\/(Q\d+)\/visualize$/,
+    async (req, res, [id]) => {
+      session.requestVisualization(id!, (await body(req, VisualizeRequestSchema)).note);
+      json(res, 200, ok);
+    },
+  ],
+  ["GET", /^\/api\/questions\/(Q\d+)\/visualization$/, (_req, res, [id]) => json(res, 200, session.visualizationPage(id!))],
   [
     "POST",
     /^\/api\/summary\/respond$/,

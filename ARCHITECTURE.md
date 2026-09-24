@@ -42,6 +42,9 @@ grill reply   -s SESSION Q3 < text.md
 grill resolve -s SESSION Q3 < resolution.json  # {"options":[1],"text":"…"}
 grill edit    -s SESSION Q3 < patch.json
 grill drop    -s SESSION Q3 < reason.txt
+grill visualize -s SESSION Q3 --brief      # how to build Q3's visualization, and the question
+grill visualize -s SESSION Q3 < page.html  # post Q3's visualization
+grill visualize -s SESSION Q3 --fail < reason.txt
 grill summary -s SESSION < summary.md
 grill state   -s SESSION
 grill stop    -s SESSION
@@ -56,6 +59,16 @@ The full contract Claude follows (round JSON, events, when to resolve or edit) i
 ## Images
 
 Images the user pastes or drops into an answer or a discussion land in the text as pills (a Lexical plain-text editor in the UI), upload to the bridge (`POST /api/images`) and are saved as files in `~/.better-grill/images/<port>-<id>/`. The text is sent with an `[Image N]` marker where each pill sits, and `images` lists the ids in marker order. The events Claude gets carry the same text and the file paths, which Claude opens with its Read tool (SKILL.md allows reads there). PNG, JPEG, GIF and WebP only, up to 10 MB each. The folder is deleted when the bridge exits.
+
+## Visualizations
+
+The Visualize button on a question asks Claude to visualize it. The bridge queues a `visualize` event; Claude hands it to a background sub-agent, which runs `grill visualize --brief` and gets the guide ([visualize.md](skills/better-grill-base/visualize.md)), the question, its discussion and the command that posts the page. The page is an HTML fragment. The bridge keeps it in memory (not in the session state, which goes out on every change) and serves it at `GET /api/questions/<id>/visualization`.
+
+The UI wraps the fragment in its own skeleton: the app's theme tokens resolved for the current theme, the Geist fonts as data URIs, a small reset and a script that reports the page's height. It shows it in an `<iframe sandbox="allow-scripts" srcdoc>`:
+
+- no `allow-same-origin`, so the page has an opaque origin: no storage, and its requests carry `Origin: null`, which the bridge refuses;
+- a CSP in the skeleton allows scripts only inline and from cdnjs and jsdelivr, and blocks every fetch, image, font or style from anywhere else;
+- the app only takes `{ type: "better-grill:size", height }` messages from the frame, to size it.
 
 ## Known limits
 

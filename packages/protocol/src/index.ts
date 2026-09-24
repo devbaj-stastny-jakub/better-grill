@@ -7,8 +7,8 @@ export * from "./images.ts";
  * Wire contract between Claude (via the bridge CLI), the bridge and the web UI.
  *
  * Claude → bridge: RoundInput, added questions, question patch, resolution,
- *                  reply text, drop reason, summary markdown.
- * Browser → bridge: ImageUpload, AnswerRequest, ChatRequest, send, SummaryResponse.
+ *                  reply text, drop reason, summary markdown, visualization page.
+ * Browser → bridge: ImageUpload, AnswerRequest, ChatRequest, VisualizeRequest, send, SummaryResponse.
  * Bridge → browser: SessionState snapshots over SSE.
  * Bridge → Claude: WaitResponse (queued GrillEvents) from the long-poll.
  *
@@ -90,6 +90,22 @@ export const TextSchema = z.object({ text: z.string().trim().min(1) });
 
 export const SummaryInputSchema = z.object({ markdown: z.string().trim().min(1) });
 
+/** Longest visualization page Claude may post, in characters of HTML. */
+export const MAX_VISUALIZATION_CHARS = 1_000_000;
+
+/**
+ * A visualization page for one question: an HTML fragment the UI wraps in its own
+ * skeleton (theme tokens, fonts, CSP) and shows in a sandboxed frame.
+ * How Claude builds it: skills/better-grill-base/visualize.md.
+ */
+export const VisualizationInputSchema = z.object({
+  html: z
+    .string()
+    .trim()
+    .min(1)
+    .max(MAX_VISUALIZATION_CHARS, `Page is over ${MAX_VISUALIZATION_CHARS.toLocaleString("en")} characters. Simplify it.`),
+});
+
 // ---------- Browser → bridge ----------
 
 /**
@@ -121,6 +137,11 @@ export const ChatRequestSchema = z
   .refine((r) => r.text.length > 0 || r.images.length > 0, { message: "Write a message or attach an image" });
 
 export type ChatRequest = z.input<typeof ChatRequestSchema>;
+
+/** The Visualize button: ask Claude to visualize a question, optionally saying what to focus on. */
+export const VisualizeRequestSchema = z.object({ note: z.string().trim().max(2000).optional() });
+
+export type VisualizeRequest = z.input<typeof VisualizeRequestSchema>;
 
 export const SummaryResponseSchema = z.object({
   confirmed: z.boolean(),
@@ -154,6 +175,28 @@ export type Answer = {
 
 export type QuestionStatus = "open" | "answered" | "dropped";
 
+/**
+ * A question's visualization. `pending`: the user asked, Claude is working on it (a page from an
+ * earlier request may still be there). `ready`: the latest page arrived. `failed`: Claude
+ * said why there's nothing useful to visualize.
+ * The page itself is not in the state: GET /api/questions/<id>/visualization serves it.
+ */
+export type Visualization = {
+  status: "pending" | "ready" | "failed";
+  /** What the user asked the latest request to show. */
+  note?: string;
+  requestedAt: number;
+  /** Bumps with every page Claude posts. 0 until the first one. */
+  version: number;
+  /** When the current page arrived. Before the question's `editedAt`: made before Claude's last edit. */
+  readyAt?: number;
+  /** Why there's no visualization, when `failed`. */
+  reason?: string;
+};
+
+/** GET /api/questions/<id>/visualization. */
+export type VisualizationPage = { version: number; html: string };
+
 export type Question = {
   id: string;
   round: number;
@@ -169,6 +212,7 @@ export type Question = {
   /** Last time Claude rewrote the question. */
   editedAt?: number;
   chat: ChatMessage[];
+  visualization?: Visualization;
 };
 
 export type Round = { number: number; title?: string; questionIds: string[]; at: number };
@@ -220,6 +264,8 @@ export type GrillEvent =
       by: "user" | "claude";
     }
   | { type: "chat"; questionId: string; title: string; text: string; images?: string[] }
+  /** The user pressed Visualize. `note`: what they want the picture to show. */
+  | { type: "visualize"; questionId: string; title: string; note?: string }
   | { type: "summary_confirmed" }
   | { type: "summary_rejected"; text?: string }
   | { type: "ended" };

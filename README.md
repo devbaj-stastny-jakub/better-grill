@@ -73,7 +73,10 @@ You also need [Node.js](https://nodejs.org) 20+ and the [`grilling`](https://git
 <tr>
 <td width="33%" valign="top"><b>Lock in, then send</b><br>Answer in any order, change your mind, send the round when it's settled.</td>
 <td width="33%" valign="top"><b>A summary at the end</b><br>Every decision in one place. Confirm it, or keep grilling.</td>
-<td width="33%" valign="top"><b>Keyboard first</b><br><kbd>↑</kbd> <kbd>↓</kbd> walk the options, <kbd>Enter</kbd> locks in, <kbd>D</kbd> opens the discussion, <kbd>[</kbd> folds the sidebar.</td>
+<td width="33%" valign="top"><b>Keyboard first</b><br><kbd>↑</kbd> <kbd>↓</kbd> walk the options, <kbd>Enter</kbd> locks in, <kbd>D</kbd> opens the discussion, <kbd>V</kbd> shows the visualization, <kbd>[</kbd> folds the sidebar.</td>
+</tr>
+<tr>
+<td colspan="3" valign="top"><b>Visualize any question</b><br>Press Visualize and Claude turns the question into an interactive page, right in the app, so it's easier to understand. Keep answering while it works.</td>
 </tr>
 </table>
 

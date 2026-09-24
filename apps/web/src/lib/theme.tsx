@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { STORAGE_KEYS } from "@/config/constants.ts";
 import { usePersistentState } from "@/hooks/use-persistent-state.ts";
 
@@ -23,7 +23,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resolved = theme === "system" ? (systemDark ? "dark" : "light") : theme;
-  useEffect(() => {
+  // Layout effect: set before any child's effect reads the theme's CSS variables.
+  useLayoutEffect(() => {
     document.documentElement.classList.toggle("dark", resolved === "dark");
   }, [resolved]);
 

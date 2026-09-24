@@ -10,6 +10,7 @@ import { DISCUSSION_DOCK_MS, DiscussionDock } from "@/features/discussion/compon
 import { DiscussionPanel } from "@/features/discussion/components/discussion-panel.tsx";
 import { useUnread } from "@/features/discussion/hooks/use-unread.ts";
 import { AppSidebar } from "@/features/navigation/components/app-sidebar.tsx";
+import { DiscussButton } from "@/features/rounds/components/discuss-button.tsx";
 import { EarlierChanges } from "@/features/rounds/components/earlier-changes.tsx";
 import { QuestionCard } from "@/features/rounds/components/question-card.tsx";
 import { QuestionRow } from "@/features/rounds/components/question-row.tsx";
@@ -27,6 +28,9 @@ import { SessionHeader } from "@/features/session/components/session-header.tsx"
 import { UnreachableScreen } from "@/features/session/components/unreachable-screen.tsx";
 import { useStep } from "@/features/stepper/hooks/use-step.ts";
 import { SummaryPanel } from "@/features/summary/components/summary-panel.tsx";
+import { VisualizationView } from "@/features/visualization/components/visualization-view.tsx";
+import { VisualizeButton } from "@/features/visualization/components/visualize-button.tsx";
+import { useVisualViews } from "@/features/visualization/hooks/use-visual-views.ts";
 import { useLingering } from "@/hooks/use-lingering.ts";
 import { usePersistentState } from "@/hooks/use-persistent-state.ts";
 import { lockReason } from "@/lib/lock.ts";
@@ -53,6 +57,8 @@ export function SessionScreen() {
 
   const { current, go, lockedIn } = useStep(state);
   const onScreen = current?.kind === "question" ? current.id : null;
+  const onScreenQuestion = onScreen ? state?.questions[onScreen] : undefined;
+  const views = useVisualViews(onScreenQuestion);
 
   // An open discussion follows the step: it switches to each question as it comes on screen.
   useEffect(() => {
@@ -60,6 +66,9 @@ export function SessionScreen() {
   }, [onScreen]);
 
   useHotkey(HOTKEYS.discuss, () => setChatFor((now) => (onScreen && now !== onScreen ? onScreen : null)));
+  useHotkey(HOTKEYS.visualize, () => onScreen && views.toggle(onScreen), {
+    enabled: !!onScreenQuestion && onScreenQuestion.status !== "dropped",
+  });
 
   // A new step starts at the top, with the keyboard on its first option.
   useEffect(() => {
@@ -91,13 +100,55 @@ export function SessionScreen() {
   const questionCard = (id: string) => {
     const question = state.questions[id];
     if (!question) return null;
+    const visual = views.showing(id) && question.status !== "dropped";
+    const { discussing, unread: unreadCount, onDiscuss } = questionProps(question);
+    const visualizeButton = (
+      <VisualizeButton
+        active={visual}
+        working={question.visualization?.status === "pending"}
+        unseen={views.unseen(question)}
+        onClick={() => views.toggle(id)}
+        hotkey={HOTKEYS.visualize}
+      />
+    );
     return (
       // Remount on Claude's edits so the card drops picks on options that changed.
+      // Both views stay mounted while switching, so a draft answer and the visualization survive it.
       <ErrorBoundary
         key={`${id}-${question.editedAt ?? 0}`}
         fallback={(error, reset) => <CrashedBlock what={`Question ${id}`} error={error} onReset={reset} />}
       >
-        <QuestionCard {...questionProps(question)} lock={lock} onLockedIn={() => lockedIn(id)} actionsSlot={actionsSlot} />
+        <div hidden={visual}>
+          <QuestionCard
+            {...questionProps(question)}
+            lock={lock}
+            onLockedIn={() => lockedIn(id)}
+            actionsSlot={visual ? null : actionsSlot}
+            extraActions={visualizeButton}
+            hidden={visual}
+          />
+        </div>
+        {(visual || question.visualization) && (
+          <div hidden={!visual}>
+            <VisualizationView
+              question={question}
+              lock={lock}
+              actionsSlot={visual ? actionsSlot : null}
+              actions={
+                <>
+                  <DiscussButton
+                    count={question.chat.length}
+                    unread={unreadCount}
+                    active={discussing}
+                    onClick={onDiscuss}
+                    hotkey={HOTKEYS.discuss}
+                  />
+                  {visualizeButton}
+                </>
+              }
+            />
+          </div>
+        )}
       </ErrorBoundary>
     );
   };

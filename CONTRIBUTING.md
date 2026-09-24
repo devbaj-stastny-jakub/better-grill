@@ -9,7 +9,7 @@ Needs Node 24 (`.nvmrc`) and pnpm.
 ```sh
 pnpm install
 pnpm dev          # bridge from TypeScript on :4777 as session 4777-dev (node --watch) + Vite on :5173 proxying /api
-pnpm demo         # fake Claude: posts rounds, echoes chat replies, ends in a summary
+pnpm demo         # fake Claude: posts rounds, echoes chat replies, posts a stand-in visualization, ends in a summary
 pnpm check-types
 pnpm build        # web UI + bridge bundle into skills/better-grill-base/dist
 ```
@@ -54,7 +54,7 @@ Any change to the wire format goes in `packages/protocol` first, then bridge, UI
 | Path                 | What                                                                                |
 | -------------------- | ----------------------------------------------------------------------------------- |
 | `app/`               | Providers and `session-screen.tsx`, which composes the features                      |
-| `features/<name>/`   | `session`, `rounds`, `discussion`, `navigation`, `summary`: each with `api/`, `components/`, `hooks/`, `utils/` as needed |
+| `features/<name>/`   | `session`, `rounds`, `discussion`, `navigation`, `summary`, `visualization`: each with `api/`, `components/`, `hooks/`, `utils/` as needed |
 | `components/ui/`     | shadcn components (Base UI, `base-nova` style). Add more with `pnpm dlx shadcn@latest add <name>` in `apps/web` |
 | `components/`        | Shared app components: markdown, errors, feedback notes, brand, theme toggle         |
 | `hooks/` `lib/` `utils/` `types/` `config/` | Shared hooks, bridge client + theme + lock, pure helpers, types, constants |

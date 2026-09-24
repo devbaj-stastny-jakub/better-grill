@@ -43,6 +43,16 @@
   --sidebar-accent-foreground: oklch(0.2 0.01 275);
   --sidebar-border: oklch(0.92 0.008 275);
   --sidebar-ring: oklch(0.63 0.19 42);
+  /*
+   * Categorical series for charts in visualizations, in this order. Checked with the
+   * dataviz palette validator on --background: adjacent pairs clear CVD and normal-vision
+   * separation in both themes; all-pairs forms (scatter) stay at three. No orange: that's --primary.
+   */
+  --series-1: #2a78d6;
+  --series-2: #1baf7a;
+  --series-3: #4a3aa7;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
 }
 
 /* Stepped layers: sidebar < page < card < popover < muted, with hairline borders. */
@@ -75,6 +85,11 @@
   --sidebar-accent-foreground: oklch(0.97 0.002 265);
   --sidebar-border: oklch(0.298 0.013 273);
   --sidebar-ring: oklch(0.69 0.19 45);
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --series-3: #9085e9;
+  --series-4: #c98500;
+  --series-5: #d55181;
 }
 
 @theme inline {
