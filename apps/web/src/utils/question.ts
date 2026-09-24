@@ -9,6 +9,15 @@ export function roundQuestions(state: SessionState, questionIds: string[]) {
   return questionIds.flatMap((id) => state.questions[id] ?? []);
 }
 
+/** Answers from earlier rounds changed since Claude got them: they go out with the latest round. */
+export function changedEarlier(state: SessionState) {
+  const latest = state.rounds.at(-1)?.number ?? 0;
+  return state.rounds
+    .filter((r) => r.number < latest)
+    .flatMap((r) => liveQuestions(roundQuestions(state, r.questionIds)))
+    .filter((q) => q.status === "answered" && !q.answer?.sent);
+}
+
 export function answerLabels(question: Question) {
   return question.options.filter((o) => question.answer?.optionIds.includes(o.id)).map((o) => o.label);
 }

@@ -10,6 +10,7 @@ import { DISCUSSION_DOCK_MS, DiscussionDock } from "@/features/discussion/compon
 import { DiscussionPanel } from "@/features/discussion/components/discussion-panel.tsx";
 import { useUnread } from "@/features/discussion/hooks/use-unread.ts";
 import { AppSidebar } from "@/features/navigation/components/app-sidebar.tsx";
+import { EarlierChanges } from "@/features/rounds/components/earlier-changes.tsx";
 import { QuestionCard } from "@/features/rounds/components/question-card.tsx";
 import { QuestionRow } from "@/features/rounds/components/question-row.tsx";
 import { RoundSection } from "@/features/rounds/components/round-section.tsx";
@@ -31,7 +32,7 @@ import { usePersistentState } from "@/hooks/use-persistent-state.ts";
 import { lockReason } from "@/lib/lock.ts";
 import { cn } from "@/lib/utils.ts";
 import { anchors } from "@/utils/anchors.ts";
-import { liveQuestions, roundQuestions } from "@/utils/question.ts";
+import { changedEarlier, liveQuestions, roundQuestions } from "@/utils/question.ts";
 
 /** The whole grill: composes the features around the live session state, one step on screen at a time. */
 export function SessionScreen() {
@@ -76,6 +77,8 @@ export function SessionScreen() {
   const live = liveQuestions(Object.values(state.questions));
   const round = current?.kind === "summary" ? undefined : state.rounds.find((r) => r.number === current?.round);
   const actionBar = current?.kind === "question";
+  // The latest round's review also lists earlier answers changed since Claude got them: this Send carries them too.
+  const earlier = current?.kind === "review" && round === state.rounds.at(-1) ? changedEarlier(state) : [];
 
   /** Shared by the question page and the review rows. */
   const questionProps = (question: Question) => ({
@@ -172,6 +175,7 @@ export function SessionScreen() {
                       {current.kind === "question" ? questionCard(current.id) : round.questionIds.map(questionRow)}
                     </RoundSection>
                   )}
+                  {earlier.length > 0 && <EarlierChanges>{earlier.map((q) => questionRow(q.id))}</EarlierChanges>}
                 </div>
               )}
 
