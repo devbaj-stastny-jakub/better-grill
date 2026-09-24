@@ -26,7 +26,7 @@ grill reply  ── POST /reply ──────▶ ── SSE ─────
 The bridge listens on `127.0.0.1` only and:
 
 - refuses requests whose `Host` isn't localhost (DNS rebinding),
-- refuses requests whose `Origin` isn't the page it serves, and requires JSON bodies, so other websites open in your browser can't post into the session,
+- refuses requests whose `Origin` isn't the page it serves, and requires JSON bodies (pasted images too, as base64), so other websites open in your browser can't post into the session,
 - refuses Claude-side calls without its session id (see below).
 
 ## CLI
@@ -53,7 +53,11 @@ Exit codes: 0 ok, 1 bridge rejected the input, 2 usage error or bridge unreachab
 
 The full contract Claude follows (round JSON, events, when to resolve or edit) is in [skills/better-grill-base/SKILL.md](skills/better-grill-base/SKILL.md).
 
+## Images
+
+Images the user pastes or drops into an answer or a discussion land in the text as pills (a Lexical plain-text editor in the UI), upload to the bridge (`POST /api/images`) and are saved as files in `~/.better-grill/images/<port>-<id>/`. The text is sent with an `[Image N]` marker where each pill sits, and `images` lists the ids in marker order. The events Claude gets carry the same text and the file paths, which Claude opens with its Read tool (SKILL.md allows reads there). PNG, JPEG, GIF and WebP only, up to 10 MB each. The folder is deleted when the bridge exits.
+
 ## Known limits
 
-- State lives in bridge memory. Browser refresh is fine; a bridge crash loses the session.
+- State lives in bridge memory. Browser refresh is fine; a bridge crash loses the session (and leaves its images folder behind).
 - One Claude session per bridge. Events queue while Claude is busy and arrive as one batch.

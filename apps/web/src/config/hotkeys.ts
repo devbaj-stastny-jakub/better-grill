@@ -1,6 +1,10 @@
 import type { RegisterableHotkey } from "@tanstack/react-hotkeys";
 
-/** Every keyboard shortcut in the app, in one place. `Mod` is ⌘ on macOS and Ctrl elsewhere. */
+/**
+ * Every keyboard shortcut in the app, in one place. `Mod` is ⌘ on macOS and Ctrl elsewhere.
+ * Inside the answer and discussion boxes the image text editor handles Enter itself
+ * (submitAnswer / sendChat, newLine), because it has to act before its own key handling.
+ */
 export const HOTKEYS = {
   /** Lock in the question you last clicked, from anywhere but a text box. */
   lockIn: "Mod+Enter",

@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { parseArgs } from "node:util";
@@ -6,8 +7,12 @@ import { z } from "zod";
 import {
   AddQuestionsSchema,
   AnswerRequestSchema,
+  ChatRequestSchema,
   QuestionPatchSchema,
   type Health,
+  type ImageUploaded,
+  ImageUploadSchema,
+  MAX_IMAGE_BYTES,
   ResolveInputSchema,
   RoundInputSchema,
   SESSION_HEADER,
@@ -16,7 +21,8 @@ import {
   TextSchema,
   type WaitResponse,
 } from "@better-grill/protocol";
-import { webDist } from "./paths.ts";
+import { createImageStore } from "./images.ts";
+import { imagesRoot, webDist } from "./paths.ts";
 import { createSession, HttpError } from "./session.ts";
 
 /*
@@ -46,7 +52,8 @@ if (values.mode !== "plain" && values.mode !== "docs") {
   console.error(`--mode must be plain or docs, got ${values.mode}`);
   process.exit(2);
 }
-const session = createSession(values.title, values.mode);
+const images = createImageStore(join(imagesRoot, `${port}-${sessionId}`));
+const session = createSession(values.title, values.mode, images.paths);
 const streams = new Set<ServerResponse>();
 let waiter: ServerResponse | null = null;
 let flushTimer: NodeJS.Timeout | undefined;
@@ -202,6 +209,16 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
   // Browser side
   [
     "POST",
+    /^\/api\/images$/,
+    async (req, res) => {
+      // Base64 is 4/3 of the image, plus room for the JSON around it.
+      const { type, data } = await body(req, ImageUploadSchema, Math.ceil((MAX_IMAGE_BYTES * 4) / 3) + 1024);
+      json(res, 201, { id: await images.save(type, data) } satisfies ImageUploaded);
+    },
+  ],
+  ["GET", /^\/api\/images\/(img\d+)$/, (_req, res, [id]) => serveImage(id!, res)],
+  [
+    "POST",
     /^\/api\/questions\/(Q\d+)\/answer$/,
     async (req, res, [id]) => {
       session.answer(id!, await body(req, AnswerRequestSchema));
@@ -220,7 +237,7 @@ const routes: [method: string, pattern: RegExp, handler: Handler][] = [
     "POST",
     /^\/api\/questions\/(Q\d+)\/chat$/,
     async (req, res, [id]) => {
-      session.chat(id!, (await body(req, TextSchema)).text);
+      session.chat(id!, await body(req, ChatRequestSchema));
       json(res, 200, ok);
     },
   ],
@@ -250,11 +267,16 @@ function json(res: ServerResponse, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
-async function body<S extends z.ZodType>(req: IncomingMessage, schema: S): Promise<z.output<S>> {
+async function body<S extends z.ZodType>(req: IncomingMessage, schema: S, maxBytes = Infinity): Promise<z.output<S>> {
   // A JSON content type forces a CORS preflight, which the bridge never answers.
   if (!req.headers["content-type"]?.startsWith("application/json")) throw new HttpError(415, "Body must be application/json");
   const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
+  let size = 0;
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length;
+    if (size > maxBytes) throw new HttpError(413, "Body is too large");
+    chunks.push(chunk as Buffer);
+  }
   const raw = Buffer.concat(chunks).toString("utf8");
   let data: unknown;
   try {
@@ -276,6 +298,21 @@ const MIME: Record<string, string> = {
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
 };
+
+function serveImage(id: string, res: ServerResponse) {
+  const image = images.get(id);
+  if (!image) throw new HttpError(404, `No image ${id}`);
+  res.writeHead(200, {
+    "content-type": image.type,
+    "x-content-type-options": "nosniff",
+    // Other sites can't embed what the user pasted here.
+    "cross-origin-resource-policy": "same-origin",
+    "cache-control": "private, max-age=31536000, immutable",
+  });
+  createReadStream(image.path)
+    .on("error", () => res.destroy())
+    .pipe(res);
+}
 
 async function serveStatic(pathname: string, res: ServerResponse) {
   const relative = normalize(decodeURIComponent(pathname)).replace(/^[/\\]+/, "");
@@ -356,3 +393,4 @@ setInterval(() => {
 }, 60_000).unref();
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) process.on(signal, () => process.exit(0));
+process.on("exit", () => images.clear());

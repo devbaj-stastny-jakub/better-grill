@@ -22,7 +22,7 @@ export function answerLabels(question: Question) {
   return question.options.filter((o) => question.answer?.optionIds.includes(o.id)).map((o) => o.label);
 }
 
-/** One-line answer: picked labels, then the text with markdown marks stripped. */
+/** One-line answer: picked labels, then the text (with its [Image N] markers) with markdown marks stripped. */
 export function answerPreview(question: Question) {
   const text = question.answer?.text?.replace(/[*_`#>]/g, "");
   return [answerLabels(question).join(" + "), text].filter(Boolean).join(" — ");

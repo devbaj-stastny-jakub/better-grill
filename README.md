@@ -67,7 +67,7 @@ You also need [Node.js](https://nodejs.org) 20+ and the [`grilling`](https://git
 <table>
 <tr>
 <td width="33%" valign="top"><b>One question at a time</b><br>Rounds step through their questions, with Claude's context, trade-offs and tables.</td>
-<td width="33%" valign="top"><b>Claude's pick on each</b><br>Take it, choose another option, write your own answer, or add a note.</td>
+<td width="33%" valign="top"><b>Claude's pick on each</b><br>Take it, choose another option, write your own answer, add a note, or paste a screenshot.</td>
 <td width="33%" valign="top"><b>A thread per question</b><br>Push back on one question; Claude rewords, resolves, drops or adds questions.</td>
 </tr>
 <tr>

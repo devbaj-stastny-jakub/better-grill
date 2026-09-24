@@ -1,11 +1,16 @@
 /**
- * Types a line break at the caret, as if the user had pressed Enter. Goes
- * through the editing pipeline (undo works, React sees an input event).
+ * The caret sits at the start (-1) or the end (1) of a text box, with nothing selected.
+ * Arrow keys use it to leave the box only once the caret can't move further.
  */
-export function insertNewline(field: HTMLTextAreaElement) {
-  field.focus();
-  if (document.execCommand("insertText", false, "\n")) return;
-  // execCommand is gone in this browser: edit the value and tell React.
-  field.setRangeText("\n", field.selectionStart, field.selectionEnd, "end");
-  field.dispatchEvent(new Event("input", { bubbles: true }));
+export function caretAtEdge(field: HTMLElement, step: 1 | -1) {
+  const selection = window.getSelection();
+  if (!selection?.rangeCount || !selection.isCollapsed) return false;
+  const caret = selection.getRangeAt(0);
+  if (!field.contains(caret.startContainer)) return false;
+  const rest = document.createRange();
+  rest.selectNodeContents(field);
+  if (step === -1) rest.setEnd(caret.startContainer, caret.startOffset);
+  else rest.setStart(caret.endContainer, caret.endOffset);
+  // Image pills carry their label as text, so a pill between caret and edge counts.
+  return rest.toString().length === 0;
 }

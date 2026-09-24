@@ -1,11 +1,14 @@
 import { z } from "zod";
+import { IMAGE_TYPES, type ImageType, MAX_IMAGES } from "./images.ts";
+
+export * from "./images.ts";
 
 /*
  * Wire contract between Claude (via the bridge CLI), the bridge and the web UI.
  *
  * Claude → bridge: RoundInput, added questions, question patch, resolution,
  *                  reply text, drop reason, summary markdown.
- * Browser → bridge: AnswerRequest, chat text, send, SummaryResponse.
+ * Browser → bridge: ImageUpload, AnswerRequest, ChatRequest, send, SummaryResponse.
  * Bridge → browser: SessionState snapshots over SSE.
  * Bridge → Claude: WaitResponse (queued GrillEvents) from the long-poll.
  *
@@ -89,12 +92,35 @@ export const SummaryInputSchema = z.object({ markdown: z.string().trim().min(1) 
 
 // ---------- Browser → bridge ----------
 
+/**
+ * POST /api/images: a pasted or dropped image, base64 in JSON so the upload keeps
+ * the JSON-only guard every browser route has. The bridge saves it and answers
+ * ImageUploaded; answers and chat messages then refer to it by id.
+ */
+export const ImageUploadSchema = z.object({
+  type: z.enum(Object.keys(IMAGE_TYPES) as [ImageType, ...ImageType[]]),
+  data: z.string().min(1),
+});
+
+export type ImageUpload = z.input<typeof ImageUploadSchema>;
+
+export type ImageUploaded = { id: string };
+
+const ImageIdsSchema = z.array(z.string().regex(/^img\d+$/)).max(MAX_IMAGES).default([]);
+
 export const AnswerRequestSchema = z.object({
   optionIds: z.array(z.string()).default([]),
   text: z.string().trim().optional(),
+  images: ImageIdsSchema,
 });
 
 export type AnswerRequest = z.input<typeof AnswerRequestSchema>;
+
+export const ChatRequestSchema = z
+  .object({ text: z.string().trim().default(""), images: ImageIdsSchema })
+  .refine((r) => r.text.length > 0 || r.images.length > 0, { message: "Write a message or attach an image" });
+
+export type ChatRequest = z.input<typeof ChatRequestSchema>;
 
 export const SummaryResponseSchema = z.object({
   confirmed: z.boolean(),
@@ -105,14 +131,26 @@ export const SummaryResponseSchema = z.object({
 
 export type Option = { id: string; label: string; description?: string };
 
-export type ChatMessage = { id: string; role: "user" | "claude"; text: string; at: number };
+/**
+ * `images`: ids of images the user attached, served at /api/images/<id>. The text marks
+ * where each one sits with `[Image N]`, N counting from 1 into `images`.
+ */
+export type ChatMessage = { id: string; role: "user" | "claude"; text: string; images?: string[]; at: number };
 
 /**
  * `sent`: Claude has received this answer. Answers stay in the bridge until the
  * user presses Send, which needs every question answered.
  * `by`: "claude" when Claude resolved it from the discussion; the user can still change it.
+ * `images`: ids of images the user attached, served at /api/images/<id>; `[Image N]` in the text is images[N-1].
  */
-export type Answer = { optionIds: string[]; text?: string; at: number; sent: boolean; by: "user" | "claude" };
+export type Answer = {
+  optionIds: string[];
+  text?: string;
+  images?: string[];
+  at: number;
+  sent: boolean;
+  by: "user" | "claude";
+};
 
 export type QuestionStatus = "open" | "answered" | "dropped";
 
@@ -174,12 +212,14 @@ export type GrillEvent =
       choices: string[];
       /** Free text the user typed: own answer, or a note on the picked option. */
       text?: string;
+      /** Absolute paths of images the user attached; `[Image N]` in the text is images[N-1]. Read them to see them. */
+      images?: string[];
       /** True when the user changed an answer Claude had already received. */
       revised: boolean;
       /** "claude": your own resolution, sent back unchanged by the user. */
       by: "user" | "claude";
     }
-  | { type: "chat"; questionId: string; title: string; text: string }
+  | { type: "chat"; questionId: string; title: string; text: string; images?: string[] }
   | { type: "summary_confirmed" }
   | { type: "summary_rejected"; text?: string }
   | { type: "ended" };

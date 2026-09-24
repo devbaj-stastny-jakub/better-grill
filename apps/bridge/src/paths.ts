@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /*
@@ -9,3 +11,9 @@ const bundled = !import.meta.url.endsWith(".ts");
 
 export const serverEntry = fileURLToPath(new URL(bundled ? "./server.js" : "./server.ts", import.meta.url));
 export const webDist = fileURLToPath(new URL(bundled ? "./web/" : "../../web/dist/", import.meta.url));
+
+/**
+ * Images the user pastes into the UI, one folder per bridge. A fixed place under the
+ * home folder, so SKILL.md can let Claude read them without a permission prompt.
+ */
+export const imagesRoot = join(homedir(), ".better-grill", "images");

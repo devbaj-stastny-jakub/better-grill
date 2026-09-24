@@ -1,6 +1,7 @@
 import type { ChatMessage as Message } from "@better-grill/protocol";
 import { SparklesIcon } from "lucide-react";
 import { Coals } from "@/components/feedback/coals.tsx";
+import { ImageText } from "@/components/image-editor/image-text.tsx";
 import { Markdown } from "@/components/markdown.tsx";
 
 export function ChatMessage({ message }: { message: Message }) {
@@ -8,7 +9,7 @@ export function ChatMessage({ message }: { message: Message }) {
     return (
       <div className="flex justify-end animate-in fade-in-0 slide-in-from-bottom-1">
         <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm whitespace-pre-wrap text-primary-foreground">
-          {message.text}
+          <ImageText text={message.text} images={message.images} tone="inverse" />
         </div>
       </div>
     );

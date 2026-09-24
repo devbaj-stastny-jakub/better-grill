@@ -1,5 +1,6 @@
 import type {
   AnswerRequest,
+  ChatRequest,
   ClaudeStatus,
   GrillEvent,
   Option,
@@ -28,8 +29,11 @@ type QuestionInput = RoundInput["questions"][number];
 
 export type Session = ReturnType<typeof createSession>;
 
-/** In-memory state of one grill session plus the queue of events Claude has not read yet. */
-export function createSession(title: string, mode: SessionMode) {
+/**
+ * In-memory state of one grill session plus the queue of events Claude has not read yet.
+ * `imagePaths` turns attached image ids into the files Claude reads, and throws on unknown ids.
+ */
+export function createSession(title: string, mode: SessionMode, imagePaths: (ids: string[]) => string[]) {
   const state: SessionState = {
     title,
     mode,
@@ -102,8 +106,14 @@ export function createSession(title: string, mode: SessionMode) {
     return ids.map((id) => ({ id, title: find(id).title }));
   }
 
-  /** Shared by user answers and Claude resolutions. */
-  function setAnswer(question: Question, optionIds: string[], rawText: string | undefined, by: "user" | "claude") {
+  /** Shared by user answers and Claude resolutions. Only the user attaches images. */
+  function setAnswer(
+    question: Question,
+    optionIds: string[],
+    rawText: string | undefined,
+    by: "user" | "claude",
+    images: string[] = [],
+  ) {
     for (const optionId of optionIds) {
       if (!question.options.some((o) => o.id === optionId)) {
         throw new HttpError(400, `Unknown option ${optionId} on ${question.id}`);
@@ -111,8 +121,11 @@ export function createSession(title: string, mode: SessionMode) {
     }
     if (!question.multiSelect && optionIds.length > 1) throw new HttpError(400, `${question.id} takes one option`);
     const text = rawText?.trim() || undefined;
-    if (optionIds.length === 0 && !text) throw new HttpError(400, "Pick an option or write an answer");
-    question.answer = { optionIds, text, at: Date.now(), sent: false, by };
+    if (optionIds.length === 0 && !text && images.length === 0) {
+      throw new HttpError(400, "Pick an option, write an answer or attach an image");
+    }
+    imagePaths(images);
+    question.answer = { optionIds, text, images: images.length > 0 ? images : undefined, at: Date.now(), sent: false, by };
     question.status = "answered";
   }
 
@@ -126,6 +139,7 @@ export function createSession(title: string, mode: SessionMode) {
         title: question.title,
         choices: question.options.filter((o) => answer.optionIds.includes(o.id)).map((o) => o.label),
         text: answer.text,
+        images: answer.images && imagePaths(answer.images),
         revised: delivered.has(question.id),
         by: answer.by,
       });
@@ -134,8 +148,14 @@ export function createSession(title: string, mode: SessionMode) {
     }
   }
 
-  function addMessage(question: Question, role: "user" | "claude", text: string) {
-    question.chat.push({ id: `m${++messageCount}`, role, text, at: Date.now() });
+  function addMessage(question: Question, role: "user" | "claude", text: string, images: string[] = []) {
+    question.chat.push({
+      id: `m${++messageCount}`,
+      role,
+      text,
+      images: images.length > 0 ? images : undefined,
+      at: Date.now(),
+    });
   }
 
   return {
@@ -268,7 +288,7 @@ export function createSession(title: string, mode: SessionMode) {
 
     answer(id: string, request: AnswerRequest) {
       assertLive();
-      setAnswer(findLive(id), request.optionIds ?? [], request.text, "user");
+      setAnswer(findLive(id), request.optionIds ?? [], request.text, "user", request.images);
       changed();
     },
 
@@ -283,11 +303,12 @@ export function createSession(title: string, mode: SessionMode) {
       changed();
     },
 
-    chat(id: string, text: string) {
+    chat(id: string, { text = "", images = [] }: ChatRequest) {
       assertLive();
       const question = find(id);
-      addMessage(question, "user", text);
-      events.push({ type: "chat", questionId: id, title: question.title, text });
+      const paths = imagePaths(images);
+      addMessage(question, "user", text, images);
+      events.push({ type: "chat", questionId: id, title: question.title, text, images: paths.length > 0 ? paths : undefined });
       changed();
     },
 

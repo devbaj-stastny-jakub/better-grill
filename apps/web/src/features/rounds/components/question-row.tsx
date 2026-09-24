@@ -1,5 +1,6 @@
 import type { Question } from "@better-grill/protocol";
 import { CircleCheckIcon, CircleDashedIcon, PencilIcon, SparklesIcon } from "lucide-react";
+import { ImageText } from "@/components/image-editor/image-text.tsx";
 import { Markdown } from "@/components/markdown.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -70,7 +71,9 @@ export function QuestionRow({ question, discussing, unread, onDiscuss, onOpen }:
             (answer.by === "claude" ? (
               <Markdown className="mt-1 text-sm">{answer.text}</Markdown>
             ) : (
-              <p className="mt-1 text-sm text-muted-foreground italic">{answer.text}</p>
+              <p className="mt-1 text-sm whitespace-pre-wrap text-muted-foreground italic">
+                <ImageText text={answer.text} images={answer.images} />
+              </p>
             ))}
         </div>
         <div className="flex shrink-0 items-center gap-1">

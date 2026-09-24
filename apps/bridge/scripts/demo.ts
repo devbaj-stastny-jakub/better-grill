@@ -49,7 +49,7 @@ for (;;) {
       await call(bridge, "POST", `/api/questions/${event.questionId}/reply`, {
         text: settles
           ? `(demo) Resolved ${event.questionId} as you said.`
-          : `(demo) You said: _${event.text}_\n\nFair point. The trade-off on **${event.title}** is mostly about how fast you want to learn versus how much you want to support.\n\nStart a message with "ok" to settle it.`,
+          : `(demo) You said: _${event.text || "(no text)"}_${event.images ? ` and sent ${event.images.length} image(s): ${event.images.join(", ")}` : ""}\n\nFair point. The trade-off on **${event.title}** is mostly about how fast you want to learn versus how much you want to support.\n\nStart a message with "ok" to settle it.`,
       });
       if (settles) await call(bridge, "POST", `/api/questions/${event.questionId}/resolve`, { text: event.text });
     }

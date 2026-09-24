@@ -2,7 +2,9 @@
 name: better-grill-base
 description: Internal. Shared instructions loaded by the better-grill and better-grill-docs skills. Do not invoke directly.
 user-invocable: false
-allowed-tools: Bash(node "${CLAUDE_SKILL_DIR}/dist/cli.js" *)
+allowed-tools:
+  - Bash(node "${CLAUDE_SKILL_DIR}/dist/cli.js" *)
+  - Read(~/.better-grill/images/**)
 ---
 
 # Better Grill
@@ -90,13 +92,15 @@ Output:
 {
   "events": [
     { "type": "answer", "questionId": "Q2", "title": "…", "choices": ["Label"], "text": "note or own answer", "revised": false, "by": "user" },
-    { "type": "chat", "questionId": "Q3", "title": "…", "text": "user message" }
+    { "type": "chat", "questionId": "Q3", "title": "…", "text": "on [Image 1] the header is too big", "images": ["/Users/…/.better-grill/images/62950-a1b2c3/img1.png"] }
   ],
   "open": [{ "id": "Q3", "title": "…" }]
 }
 ```
 
 `open` lists questions still unanswered after these events. A wait that returns only `chat` events means the round is still in progress: handle the chat, then wait again.
+
+`images` (on `answer` and `chat`, only when present) lists absolute paths of images the user pasted or dropped in: screenshots, sketches, diagrams. The user places each image inside their text, where it shows up as `[Image N]`: `[Image 1]` is `images[0]`, `[Image 2]` is `images[1]`, and so on. Read every image with the Read tool before you act on the event; they are part of what the user said, and the text around each marker tells you what it is about. When you reply about one, name it the same way ("in Image 2, …"). The files are deleted when the bridge stops.
 
 ## 5. Handle events
 

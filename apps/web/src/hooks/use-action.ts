@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 /** Pending + error state around one bridge call. `run` resolves true on success. */
-export function useAction<Args extends unknown[]>(action: (...args: Args) => Promise<void>) {
+export function useAction<Args extends unknown[]>(action: (...args: Args) => Promise<unknown>) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

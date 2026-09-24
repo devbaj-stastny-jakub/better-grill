@@ -7,18 +7,21 @@ import { ErrorNote } from "@/components/feedback/error-note.tsx";
 import { LockedNote } from "@/components/feedback/locked-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
 import { HotkeyHint } from "@/components/hotkey-hint.tsx";
+import { DropOverlay } from "@/components/drop-overlay.tsx";
+import { type ImageDraft, ImageTextEditor, type ImageTextEditorHandle } from "@/components/image-editor/image-text-editor.tsx";
 import { Markdown } from "@/components/markdown.tsx";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
+import { InputGroup } from "@/components/ui/input-group.tsx";
 import { HOTKEYS } from "@/config/hotkeys.ts";
 import { useAction } from "@/hooks/use-action.ts";
+import { useFileDrop } from "@/hooks/use-file-drop.ts";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
 import { cn } from "@/lib/utils.ts";
 import { anchors } from "@/utils/anchors.ts";
-import { insertNewline } from "@/utils/text-input.ts";
+import { caretAtEdge } from "@/utils/text-input.ts";
 import { answerQuestion } from "../api/answer-question.ts";
 import { moveAnswerFocus } from "../utils/answer-nav.ts";
 import { setActiveQuestion, useIsActiveQuestion } from "../stores/active-question.ts";
@@ -43,8 +46,15 @@ type FocusZone = "option" | "text" | null;
 export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, onLockedIn, actionsSlot }: Props) {
   const locked = lock !== null;
   const [selected, setSelected] = useState<string[]>(question.answer?.optionIds ?? []);
-  const [text, setText] = useState(question.answer?.text ?? "");
+  const [draft, setDraft] = useState<ImageDraft>(() => savedDraft(question));
+  const [imageError, setImageError] = useState<string | null>(null);
   const answerAction = useAction(answerQuestion);
+  const answerBox = useRef<ImageTextEditorHandle>(null);
+  const drop = useFileDrop({
+    disabled: locked,
+    onFiles: (files) => answerBox.current?.insertFiles(files),
+    onReject: setImageError,
+  });
 
   const toggle = (id: string) => {
     answerAction.clearError();
@@ -56,32 +66,38 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
 
   const saved = question.answer;
   const changing = question.status === "answered";
-  const unchanged = (optionIds: string[]) =>
-    sameIds(optionIds, saved?.optionIds ?? []) && text.trim() === (saved?.text ?? "").trim();
+  const unchanged = (optionIds: string[], current = draft) =>
+    sameIds(optionIds, saved?.optionIds ?? []) &&
+    current.text.trim() === (saved?.text ?? "").trim() &&
+    sameIds(current.images, saved?.images ?? []) &&
+    !current.uploading;
   const dirty = changing && !unchanged(selected);
 
   const sending = answerAction.pending;
-  const hasInput = selected.length > 0 || text.trim().length > 0;
-  const canSend = !locked && !sending && hasInput && (!changing || dirty);
+  const hasInput = selected.length > 0 || !draft.empty;
+  const canSend = !locked && !sending && !draft.uploading && hasInput && (!changing || dirty);
 
   const discard = () => {
     answerAction.clearError();
     setSelected(saved?.optionIds ?? []);
-    setText(saved?.text ?? "");
+    answerBox.current?.reset(saved?.text ?? "", saved?.images ?? []);
   };
 
   const card = useRef<HTMLDivElement>(null);
-  const answerBox = useRef<HTMLTextAreaElement>(null);
   const [zone, setZone] = useState<FocusZone>(null);
 
-  const send = async (optionIds = selected) => {
-    if (locked || sending || (optionIds.length === 0 && !text.trim())) return;
+  const send = async (optionIds = selected, current = draft) => {
+    if (locked || sending || current.uploading || (optionIds.length === 0 && current.empty)) return;
     // Enter on the answer already locked in: nothing to save, carry on.
-    if (changing && unchanged(optionIds)) {
+    if (changing && unchanged(optionIds, current)) {
       onLockedIn();
       return;
     }
-    const ok = await answerAction.run(question.id, { optionIds, text: text.trim() || undefined });
+    const ok = await answerAction.run(question.id, {
+      optionIds,
+      text: current.text.trim() || undefined,
+      images: current.images,
+    });
     if (ok) onLockedIn();
   };
 
@@ -110,45 +126,27 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
   const walk = (event: KeyboardEvent, step: 1 | -1) => {
     const item = event.target as HTMLElement;
     if (!item.matches("[data-answer-item]")) return;
-    // In the textarea, arrows move the caret until it hits the start (↑) or the end (↓).
-    if (item instanceof HTMLTextAreaElement) {
-      const atEdge = step === -1 ? item.selectionEnd === 0 : item.selectionStart === item.value.length;
-      if (!atEdge) return;
-    }
+    // In the answer box, arrows move the caret until it hits the start (↑) or the end (↓).
+    if (item.isContentEditable && !caretAtEdge(item, step)) return;
     if (moveAnswerFocus(item, step)) event.preventDefault();
   };
   useHotkey(HOTKEYS.nextAnswer, (event) => walk(event, 1), scoped);
   useHotkey(HOTKEYS.previousAnswer, (event) => walk(event, -1), scoped);
-  // Enter on an option or in the answer box locks in, like Enter sends in the discussion.
+  // Enter on an option locks in. In the answer box the editor owns Enter (onSubmit below), like in the discussion.
   useHotkey(
     HOTKEYS.submitAnswer,
     (event) => {
       const target = event.target as HTMLElement;
-      if (target.dataset.optionId) {
-        event.preventDefault(); // no click, so the option isn't toggled off again
-        lockInOption(target.dataset.optionId);
-      } else if (target === answerBox.current && !event.isComposing) {
-        event.preventDefault();
-        void send();
-      }
-      // Anywhere else (Discuss, Discard changes) Enter keeps its normal meaning.
+      if (!target.dataset.optionId) return; // Discuss, Discard changes: Enter keeps its normal meaning
+      event.preventDefault(); // no click, so the option isn't toggled off again
+      lockInOption(target.dataset.optionId);
     },
     scoped,
-  );
-  useHotkey(
-    HOTKEYS.newLine,
-    (event) => {
-      const box = answerBox.current;
-      if (!box || event.target !== box) return;
-      event.preventDefault();
-      insertNewline(box);
-    },
-    { ...scoped, conflictBehavior: "allow" },
   );
 
   const trackZone = (event: React.FocusEvent) => {
     const target = event.target as HTMLElement;
-    setZone(target.dataset.optionId ? "option" : target instanceof HTMLTextAreaElement ? "text" : null);
+    setZone(target.dataset.optionId ? "option" : target.isContentEditable ? "text" : null);
   };
 
   const kind = question.options.length === 0 ? "Open answer" : question.multiSelect ? "Pick any" : "Pick one";
@@ -182,7 +180,7 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
         </KeyHints>
       ) : (
         <span className="hidden text-xs text-muted-foreground sm:inline">
-          {question.options.length > 0 ? "Pick or type" : "Type an answer"}
+          {question.options.length > 0 ? "Pick, type or drop an image" : "Type an answer or drop an image"}
         </span>
       )}
       {dirty && (
@@ -209,11 +207,13 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
       onBlurCapture={(event) => {
         if (!card.current?.contains(event.relatedTarget as Node | null)) setZone(null);
       }}
+      {...drop.dropZone}
       className={cn(
-        "scroll-mt-20 gap-5 pt-5 shadow-xs transition-shadow",
+        "relative scroll-mt-20 gap-5 pt-5 shadow-xs transition-shadow",
         discussing ? "ring-1 ring-primary/45" : "hover:shadow-sm",
       )}
     >
+      <DropOverlay show={drop.dragging} />
       {/* grid-cols-1 (minmax(0,1fr)): a wide table or code block scrolls instead of stretching the card. */}
       <CardHeader className="grid-cols-1 gap-2 px-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
@@ -261,25 +261,32 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
           </Alert>
         )}
 
-        <Textarea
-          ref={answerBox}
-          data-answer-item
-          value={text}
-          disabled={locked || sending}
-          onChange={(e) => {
-            answerAction.clearError();
-            setText(e.target.value);
-          }}
-          rows={2}
-          placeholder={
-            question.options.length === 0
-              ? "Your answer…"
-              : selected.length > 0
-                ? "Add a note to your pick (optional)…"
-                : "Or write your own answer…"
-          }
-          className="min-h-20 scroll-mt-20 scroll-mb-32 resize-y"
-        />
+        {/* Images sit in the text as pills, so the answer can say which one it means. */}
+        <InputGroup className="h-auto">
+          <ImageTextEditor
+            ref={answerBox}
+            initialText={saved?.text}
+            initialImages={saved?.images}
+            disabled={locked || sending}
+            invalid={!!answerAction.error}
+            editableProps={{ "data-answer-item": !(locked || sending) || undefined }}
+            onChange={(next) => {
+              if (next.text !== draft.text) answerAction.clearError();
+              setDraft(next);
+            }}
+            onSubmit={(current) => void send(selected, current)}
+            onError={setImageError}
+            placeholder={
+              question.options.length === 0
+                ? "Your answer… (paste or drop images)"
+                : selected.length > 0
+                  ? "Add a note to your pick (optional)…"
+                  : "Or write your own answer…"
+            }
+            className="max-h-80 min-h-20 scroll-mt-20 scroll-mb-32"
+          />
+        </InputGroup>
+        {imageError && <ErrorNote message={imageError} onDismiss={() => setImageError(null)} />}
 
         {answerAction.error && (
           <ErrorNote message={answerAction.error} onRetry={() => void send()} onDismiss={answerAction.clearError} />
@@ -308,6 +315,12 @@ export function QuestionEditor({ question, lock, discussing, unread, onDiscuss, 
       )}
     </>
   );
+}
+
+function savedDraft(question: Question): ImageDraft {
+  const text = question.answer?.text ?? "";
+  const images = question.answer?.images ?? [];
+  return { text, images, uploading: false, empty: !text.trim() && images.length === 0 };
 }
 
 function sameIds(a: string[], b: string[]) {

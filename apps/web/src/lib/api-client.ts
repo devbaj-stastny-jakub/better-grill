@@ -2,8 +2,8 @@ import { REQUEST_TIMEOUT_MS } from "@/config/constants.ts";
 
 export class ActionError extends Error {}
 
-/** POST JSON to the bridge. Throws ActionError with copy that can go straight into the UI. */
-export async function post(path: string, body: unknown) {
+/** POST JSON to the bridge and return its JSON answer. Throws ActionError with copy that can go straight into the UI. */
+export async function post<T = unknown>(path: string, body: unknown): Promise<T> {
   let response: Response;
   try {
     response = await fetch(path, {
@@ -26,4 +26,5 @@ export async function post(path: string, body: unknown) {
     }
     throw new ActionError(detail || `Request failed (${response.status}).`);
   }
+  return (await response.json()) as T;
 }
