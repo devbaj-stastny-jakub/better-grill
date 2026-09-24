@@ -55,7 +55,8 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
         <span className="truncate text-sm font-semibold tracking-tight group-data-[collapsible=icon]:hidden">better grill</span>
       </SidebarHeader>
 
-      <SidebarContent>
+      {/* shadcn clips the content when collapsed; long sessions need the chip strip to scroll. */}
+      <SidebarContent className="group-data-[collapsible=icon]:overflow-x-hidden group-data-[collapsible=icon]:overflow-y-auto">
         {state.rounds.length === 0 && <SidebarEmpty ended={state.ended} />}
 
         {state.rounds.map((round, i) => (
