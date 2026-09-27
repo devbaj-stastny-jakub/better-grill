@@ -12,17 +12,21 @@ const loadFonts = () => (fonts ??= import("../utils/fonts.ts").then((m) => m.FON
  * Claude's page in a sandboxed frame: scripts run, but with an opaque origin they can't
  * reach the bridge, the app or its storage. The frame grows to the page's height.
  * A theme switch rebuilds the page, so it restarts in the new theme.
+ * Each build gets a new <iframe> rather than a new `srcdoc` on the old one: changing `srcdoc`
+ * adds a history entry to the tab, and a tab with history can't close itself at the end.
  */
 export function VisualizationFrame({ html, title, className }: { html: string; title: string; className?: string }) {
   const { resolved } = useTheme();
   const frame = useRef<HTMLIFrameElement>(null);
-  const [srcDoc, setSrcDoc] = useState<string | null>(null);
+  const [page, setPage] = useState<{ srcDoc: string; build: number } | null>(null);
   const [height, setHeight] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
     void loadFonts().then((fontFaces) => {
-      if (live) setSrcDoc(frameDocument({ fragment: html, theme: resolved, tokens: readTokens(), fontFaces }));
+      if (!live) return;
+      const srcDoc = frameDocument({ fragment: html, theme: resolved, tokens: readTokens(), fontFaces });
+      setPage((now) => ({ srcDoc, build: (now?.build ?? 0) + 1 }));
     });
     return () => {
       live = false;
@@ -47,11 +51,12 @@ export function VisualizationFrame({ html, title, className }: { html: string; t
           <Spinner className="size-5 text-muted-foreground" />
         </div>
       )}
-      {srcDoc && (
+      {page && (
         <iframe
+          key={page.build}
           ref={frame}
           title={title}
-          srcDoc={srcDoc}
+          srcDoc={page.srcDoc}
           sandbox="allow-scripts"
           referrerPolicy="no-referrer"
           style={height === null ? undefined : { height }}
