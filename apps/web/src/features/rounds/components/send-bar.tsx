@@ -31,10 +31,13 @@ export function SendBar({ state, lock, onJump, showBar }: Props) {
   const sending = action.pending;
   const button = useRef<HTMLButtonElement>(null);
 
-  // Last question just locked in by keyboard and focus fell to the page: hand it to Send, so Enter sends.
+  // Last question just locked in and focus fell to the page: hand it to Send, so Enter sends. Also on
+  // showBar: the round can turn ready while the last question is still on screen, before this bar exists.
   useEffect(() => {
-    if (ready && document.activeElement === document.body) button.current?.focus({ preventScroll: true });
-  }, [ready]);
+    if (!ready || !showBar || document.activeElement !== document.body) return;
+    // focusVisible: show the ring even when the answer was locked in with a click.
+    button.current?.focus({ preventScroll: true, focusVisible: true } as FocusOptions);
+  }, [ready, showBar]);
 
   if (state.ended) return null;
   if (idle) return state.awaitingSince ? <ClaudeWorking since={state.awaitingSince} lock={lock} /> : null;
