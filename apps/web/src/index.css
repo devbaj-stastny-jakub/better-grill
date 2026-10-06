@@ -252,7 +252,7 @@
 /* Markdown written by Claude. Inherits size and colour from its container. */
 @layer components {
   .md {
-    @apply leading-relaxed;
+    @apply leading-relaxed break-words;
   }
   .md > * + * {
     @apply mt-3;
