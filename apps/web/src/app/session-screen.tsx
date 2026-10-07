@@ -45,7 +45,7 @@ export function SessionScreen() {
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const [closing, setClosing] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = usePersistentState(STORAGE_KEYS.sidebarOpen, true);
-  // The question page's floating action bar renders into this, at the very end of the page.
+  // Each step's floating action bar renders into this, at the very end of the page.
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
   const chatQuestion = chatFor ? state?.questions[chatFor] : undefined;
@@ -85,7 +85,6 @@ export function SessionScreen() {
   const lock = lockReason(state, connection);
   const live = liveQuestions(Object.values(state.questions));
   const round = current?.kind === "summary" ? undefined : state.rounds.find((r) => r.number === current?.round);
-  const actionBar = current?.kind === "question";
   // The latest round's review also lists earlier answers changed since Claude got them: this Send carries them too.
   const earlier = current?.kind === "review" && round === state.rounds.at(-1) ? changedEarlier(state) : [];
 
@@ -204,8 +203,8 @@ export function SessionScreen() {
             {state.ended ? <EndedEmpty /> : <WaitingForRound state={state} />}
           </div>
         ) : (
-          <div className={cn("px-8 pt-8", actionBar ? "flex flex-1 flex-col pb-3" : "pb-32")}>
-            <div className={cn("mx-auto max-w-3xl", actionBar && "flex w-full flex-1 flex-col")}>
+          <div className="flex flex-1 flex-col px-8 pt-8 pb-3">
+            <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
               {current && (
                 // Keyed by step so each one fades in fresh.
                 <div
@@ -214,7 +213,12 @@ export function SessionScreen() {
                 >
                   {current.kind === "summary" && state.summary && (
                     <ErrorBoundary fallback={(error, reset) => <CrashedBlock what="Summary" error={error} onReset={reset} />}>
-                      <SummaryPanel summary={state.summary} lock={lock} onConfirmed={() => setClosing("Summary confirmed")} />
+                      <SummaryPanel
+                        summary={state.summary}
+                        lock={lock}
+                        onConfirmed={() => setClosing("Summary confirmed")}
+                        actionsSlot={actionsSlot}
+                      />
                     </ErrorBoundary>
                   )}
                   {round && current.kind !== "summary" && (
@@ -234,17 +238,13 @@ export function SessionScreen() {
                 state={state}
                 lock={lock}
                 onJump={go}
-                showBar={current?.kind === "review"}
+                actionsSlot={current?.kind === "review" ? actionsSlot : null}
               />
 
-              {actionBar && (
-                <>
-                  {/* Room to scroll the question clear of the bar's fade; grows so a short page still puts the bar at the bottom. */}
-                  <div aria-hidden className="min-h-20 flex-1" />
-                  {/* Last in the page, so where it rests at the end is where it sticks while scrolling: the bottom. */}
-                  <div ref={setActionsSlot} className="sticky bottom-3 z-20" />
-                </>
-              )}
+              {/* Room to scroll the step clear of the bar's fade; grows so a short page still puts the bar at the bottom. */}
+              <div aria-hidden className="min-h-20 flex-1" />
+              {/* Last in the page, so where it rests at the end is where it sticks while scrolling: the bottom. */}
+              <div ref={setActionsSlot} className="sticky bottom-3 z-20" />
             </div>
           </div>
         )}

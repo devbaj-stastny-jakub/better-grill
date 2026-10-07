@@ -4,6 +4,7 @@ import { CircleDashedIcon, SendIcon } from "lucide-react";
 import { ErrorNote } from "@/components/feedback/error-note.tsx";
 import { LockedNote } from "@/components/feedback/locked-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
+import { FloatingActions } from "@/components/floating-actions.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
@@ -17,77 +18,76 @@ type Props = {
   lock: LockReason;
   /** Show a step, by its anchor id. */
   onJump: (anchor: string) => void;
-  /** The send card itself (a round's review); off leaves only the Claude-is-working card. */
-  showBar: boolean;
+  /** Where the send bar floats (a round's review); none leaves only the Claude-is-working card. */
+  actionsSlot?: HTMLElement | null;
 };
 
 /**
  * Answers wait in the bridge until the user sends them; needs every question answered.
- * Sits at the end of a round's review (the header's SendButton works from anywhere).
+ * Floats at the bottom of a round's review (the header's SendButton works from anywhere).
  * Between Send and the next round it shows that Claude is working, on any step.
  */
-export function SendBar({ state, lock, onJump, showBar }: Props) {
+export function SendBar({ state, lock, onJump, actionsSlot }: Props) {
   const { open, unsent, changes, ready, idle, action, send } = useSendRound(state, lock);
   const sending = action.pending;
   const button = useRef<HTMLButtonElement>(null);
 
   // Last question just locked in and focus fell to the page: hand it to Send, so Enter sends. Also on
-  // showBar: the round can turn ready while the last question is still on screen, before this bar exists.
+  // the slot: the round can turn ready while the last question is still on screen, before this bar exists.
   useEffect(() => {
-    if (!ready || !showBar || document.activeElement !== document.body) return;
+    if (!ready || !actionsSlot || document.activeElement !== document.body) return;
     // focusVisible: show the ring even when the answer was locked in with a click.
     button.current?.focus({ preventScroll: true, focusVisible: true } as FocusOptions);
-  }, [ready, showBar]);
+  }, [ready, actionsSlot]);
 
   if (state.ended) return null;
   if (idle) return state.awaitingSince ? <ClaudeWorking since={state.awaitingSince} lock={lock} /> : null;
-  if (!showBar) return null;
+  if (!actionsSlot) return null;
 
   return (
-    <div className="mb-12">
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border bg-popover/95 px-4 py-3 shadow-lg backdrop-blur-md transition-[border-color,box-shadow] sm:px-5",
-          ready && "border-primary/50 shadow-primary/15 ring-4 ring-primary/10",
+    <FloatingActions
+      slot={actionsSlot}
+      className={cn(
+        "flex-wrap gap-x-4 gap-y-3 transition-[border-color,box-shadow]",
+        ready && "border-primary/50 shadow-primary/15 ring-4 ring-primary/10",
+      )}
+    >
+      <div className="min-w-0 flex-1">
+        {open.length > 0 ? (
+          <>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <CircleDashedIcon className="size-4 text-primary" />
+              <span className="tabular-nums">{open.length}</span> still open
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {open.map((q) => (
+                <Badge
+                  key={q.id}
+                  variant="outline"
+                  className="font-mono text-muted-foreground hover:bg-muted hover:text-foreground"
+                  render={<button type="button" onClick={() => onJump(anchors.question(q.id))} />}
+                >
+                  {q.id}
+                </Badge>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-semibold">All locked in.</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {unsent.length} {unsent.length === 1 ? "answer" : "answers"}
+              {changes > 0 && ` · ${changes} changed from earlier rounds`} · you can still change anything
+            </p>
+          </>
         )}
-      >
-        <div className="min-w-0 flex-1">
-          {open.length > 0 ? (
-            <>
-              <p className="flex items-center gap-2 text-sm font-medium">
-                <CircleDashedIcon className="size-4 text-primary" />
-                <span className="tabular-nums">{open.length}</span> still open
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {open.map((q) => (
-                  <Badge
-                    key={q.id}
-                    variant="outline"
-                    className="font-mono text-muted-foreground hover:bg-muted hover:text-foreground"
-                    render={<button type="button" onClick={() => onJump(anchors.question(q.id))} />}
-                  >
-                    {q.id}
-                  </Badge>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-sm font-semibold">All locked in.</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {unsent.length} {unsent.length === 1 ? "answer" : "answers"}
-                {changes > 0 && ` · ${changes} changed from earlier rounds`} · you can still change anything
-              </p>
-            </>
-          )}
-          {lock && <LockedNote className="mt-1.5">{LOCK_COPY[lock]}</LockedNote>}
-          {action.error && <ErrorNote className="mt-2" message={action.error} onRetry={send} onDismiss={action.clearError} />}
-        </div>
-        <Button ref={button} size="lg" disabled={!ready} onClick={send} className="px-4">
-          {!sending && <SendIcon data-icon="inline-start" />}
-          <PendingLabel pending={sending} pendingLabel="Sending…" label="Send to Claude" />
-        </Button>
+        {lock && <LockedNote className="mt-1.5">{LOCK_COPY[lock]}</LockedNote>}
+        {action.error && <ErrorNote className="mt-2" message={action.error} onRetry={send} onDismiss={action.clearError} />}
       </div>
-    </div>
+      <Button ref={button} size="lg" disabled={!ready} onClick={send} className="px-4">
+        {!sending && <SendIcon data-icon="inline-start" />}
+        <PendingLabel pending={sending} pendingLabel="Sending…" label="Send to Claude" />
+      </Button>
+    </FloatingActions>
   );
 }

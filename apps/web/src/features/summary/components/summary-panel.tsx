@@ -4,10 +4,11 @@ import { CheckIcon, ClipboardCheckIcon, UndoIcon } from "lucide-react";
 import { ErrorNote } from "@/components/feedback/error-note.tsx";
 import { LockedNote } from "@/components/feedback/locked-note.tsx";
 import { PendingLabel } from "@/components/feedback/pending-label.tsx";
+import { FloatingActions } from "@/components/floating-actions.tsx";
 import { Markdown } from "@/components/markdown.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { useAction } from "@/hooks/use-action.ts";
 import { LOCK_COPY, type LockReason } from "@/lib/lock.ts";
@@ -19,9 +20,11 @@ type Props = {
   lock: LockReason;
   /** The user agreed; the session is over from their side. */
   onConfirmed: () => void;
+  /** Where the confirm / send back bar floats: the end of the page. */
+  actionsSlot?: HTMLElement | null;
 };
 
-export function SummaryPanel({ summary, lock, onConfirmed }: Props) {
+export function SummaryPanel({ summary, lock, onConfirmed, actionsSlot }: Props) {
   const [objecting, setObjecting] = useState(false);
   const [text, setText] = useState("");
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -40,7 +43,31 @@ export function SummaryPanel({ summary, lock, onConfirmed }: Props) {
 
   const answerable = summary.status === "pending" && !lock;
 
-  return (
+  const actions = objecting ? (
+    <>
+      <Button variant="ghost" disabled={busy} onClick={() => setObjecting(false)}>
+        Cancel
+      </Button>
+      <div className="flex-1" />
+      <Button disabled={busy || !text.trim()} onClick={() => void respond(false)}>
+        <PendingLabel pending={busy} pendingLabel="Sending back…" label="Send back to Claude" />
+      </Button>
+    </>
+  ) : (
+    <>
+      <span className="hidden text-xs text-muted-foreground sm:inline">Does this match what we settled?</span>
+      <div className="flex-1" />
+      <Button variant="outline" disabled={busy} onClick={() => setObjecting(true)}>
+        Not yet
+      </Button>
+      <Button disabled={busy} onClick={() => void respond(true)}>
+        {!busy && <CheckIcon data-icon="inline-start" />}
+        <PendingLabel pending={busy} pendingLabel="Confirming…" label="Yes, that's it" />
+      </Button>
+    </>
+  );
+
+  const panel = (
     <Card
       id={anchors.summary}
       className="scroll-mt-20 gap-5 pt-5 ring-primary/30 animate-in fade-in-0 slide-in-from-bottom-2 animation-duration-500"
@@ -91,31 +118,14 @@ export function SummaryPanel({ summary, lock, onConfirmed }: Props) {
           />
         )}
       </CardContent>
-
-      {answerable && (
-        <CardFooter className="flex-wrap gap-2 px-5 sm:px-6">
-          {objecting ? (
-            <>
-              <Button disabled={busy || !text.trim()} onClick={() => void respond(false)}>
-                <PendingLabel pending={busy} pendingLabel="Sending back…" label="Send back to Claude" />
-              </Button>
-              <Button variant="ghost" disabled={busy} onClick={() => setObjecting(false)}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button disabled={busy} onClick={() => void respond(true)}>
-                {!busy && <CheckIcon data-icon="inline-start" />}
-                <PendingLabel pending={busy} pendingLabel="Confirming…" label="Yes, that's it" />
-              </Button>
-              <Button variant="outline" disabled={busy} onClick={() => setObjecting(true)}>
-                Not yet
-              </Button>
-            </>
-          )}
-        </CardFooter>
-      )}
     </Card>
+  );
+  if (!answerable || !actionsSlot) return panel;
+
+  return (
+    <>
+      {panel}
+      <FloatingActions slot={actionsSlot}>{actions}</FloatingActions>
+    </>
   );
 }
