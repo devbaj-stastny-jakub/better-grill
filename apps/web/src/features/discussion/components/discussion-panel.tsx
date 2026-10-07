@@ -75,13 +75,14 @@ export function DiscussionPanel({ question, lock, claude, onClose }: Props) {
   );
 
   return (
-    <aside className="relative flex h-full flex-col bg-background" {...drop.dropZone}>
+    <aside
+      aria-label={`Discussion: ${question.title}`}
+      className="relative flex h-full flex-col bg-background"
+      {...drop.dropZone}
+    >
       <DropOverlay show={drop.dragging} />
       <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
         <Badge className="font-mono">{question.id}</Badge>
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold" title={question.title}>
-          {question.title}
-        </h2>
         {question.status === "answered" &&
           (question.answer?.by === "claude" ? (
             <Badge variant="secondary" className="bg-primary/10 text-primary">
@@ -93,6 +94,7 @@ export function DiscussionPanel({ question, lock, claude, onClose }: Props) {
             </Badge>
           ))}
         {question.status === "dropped" && <Badge variant="outline">Dropped</Badge>}
+        <div className="flex-1" />
         <Tooltip>
           <TooltipTrigger render={<Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close discussion" />}>
             <XIcon />
