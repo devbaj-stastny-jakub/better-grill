@@ -163,8 +163,6 @@ export function QuestionEditor({
     setZone(target.dataset.optionId ? "option" : target.isContentEditable ? "text" : null);
   };
 
-  const kind = question.options.length === 0 ? "Open answer" : question.multiSelect ? "Pick any" : "Pick one";
-
   const actions = (
     <>
       <DiscussButton
@@ -233,7 +231,6 @@ export function QuestionEditor({
       <CardHeader className="grid-cols-1 gap-2 px-5 sm:px-6">
         <div className="flex flex-wrap items-center gap-2">
           <Badge className="font-mono">{question.id}</Badge>
-          <span className="text-xs text-muted-foreground">{kind}</span>
           {question.editedAt && (
             <Badge variant="secondary" className="bg-primary/10 text-primary">
               <SparklesIcon data-icon="inline-start" />

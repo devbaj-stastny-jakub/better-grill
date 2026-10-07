@@ -54,6 +54,8 @@ try {
   let pending = wait();
 
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2, colorScheme: "dark" });
+  // The panel starts collapsed; the shots show it open.
+  await page.addInitScript("localStorage.setItem('better-grill:rail-expanded', 'true')");
   await page.goto(url);
   await page.getByText("Who is the first user?").first().waitFor();
 

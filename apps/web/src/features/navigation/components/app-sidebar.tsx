@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import type { Question, SessionState } from "@better-grill/protocol";
 import { ClipboardCheckIcon } from "lucide-react";
 import { BrandMark } from "@/components/brand.tsx";
+import { HotkeyHint } from "@/components/hotkey-hint.tsx";
 import { ResizeHandle } from "@/components/resize-handle.tsx";
 import { ThemeToggle } from "@/components/theme-toggle.tsx";
 import {
@@ -15,8 +16,11 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
   SidebarSeparator,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar.tsx";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip.tsx";
+import { HOTKEYS } from "@/config/hotkeys.ts";
 import { liveQuestions, roundQuestions } from "@/utils/question.ts";
 import { anchors } from "@/utils/anchors.ts";
 import { useSidebarHotkey } from "../hooks/use-sidebar-hotkey.ts";
@@ -50,9 +54,16 @@ export function AppSidebar({ state, current, onJump, chatFor, unread, onOpenChat
 
   return (
     <Sidebar variant="floating" collapsible="icon" aria-label="Rounds and questions">
+      {/* Collapsed, the toggle takes the logo's place. */}
       <SidebarHeader className="h-12 flex-row items-center border-b px-2">
-        <BrandMark />
-        <span className="truncate text-sm font-semibold tracking-tight group-data-[collapsible=icon]:hidden">better grill</span>
+        <BrandMark className="group-data-[collapsible=icon]:hidden" />
+        <span className="flex-1 truncate text-sm font-semibold tracking-tight group-data-[collapsible=icon]:hidden">better grill</span>
+        <Tooltip>
+          <TooltipTrigger render={<SidebarTrigger className="size-8" />} />
+          <TooltipContent side={sidebarState === "collapsed" ? "right" : "bottom"}>
+            Toggle panel <HotkeyHint hotkey={HOTKEYS.toggleSidebar} />
+          </TooltipContent>
+        </Tooltip>
       </SidebarHeader>
 
       {/* shadcn clips the content when collapsed; long sessions need the chip strip to scroll. */}

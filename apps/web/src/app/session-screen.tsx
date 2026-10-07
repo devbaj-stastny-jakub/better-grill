@@ -44,7 +44,7 @@ export function SessionScreen() {
   const [chatFor, setChatFor] = useState<string | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const [closing, setClosing] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = usePersistentState(STORAGE_KEYS.sidebarOpen, true);
+  const [sidebarOpen, setSidebarOpen] = usePersistentState(STORAGE_KEYS.sidebarOpen, false);
   // Each step's floating action bar renders into this, at the very end of the page.
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
@@ -190,7 +190,6 @@ export function SessionScreen() {
         <div className="pointer-events-none sticky top-0 z-30 space-y-2 pt-3 *:pointer-events-auto before:absolute before:inset-x-0 before:top-0 before:h-3 before:canvas">
           <SessionHeader
             state={state}
-            connection={connection}
             onEnd={() => setConfirmingEnd(true)}
             actions={<SendButton state={state} lock={lock} onJump={go} />}
           />
